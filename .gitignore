@@ -1,0 +1,16 @@
+# 認証情報
+config/creds.json
+config/ff01-455323-24aa6cec6617.json
+config/token.json
+
+# データファイル
+data/deliveryMaster.json
+data/processed_sheets.json
+data/last_mail_check.json
+
+# 生成されたファイル
+orders/
+invoices/
+
+# Node.js
+node_modules/
