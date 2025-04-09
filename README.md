@@ -2,6 +2,33 @@
 
 このプロジェクトは、Gmail APIを使用してメールボックスの変更を監視し、添付ファイル（Excelファイル）を処理して、Googleスプレッドシートに転記し、発注用ファイルを生成するシステムです。
 
+## 他のPCでのセットアップ手順
+
+1. **リポジトリのクローン**
+   ```
+   git clone https://github.com/あなたのユーザー名/ff_2.git
+   cd ff_2
+   ```
+
+2. **依存パッケージのインストール**
+   ```
+   npm install
+   ```
+
+3. **認証情報の設定**
+   - Google Cloud Consoleから認証情報を取得し、以下のファイルを配置：
+     - `config/creds.json` - Gmail API用の認証情報
+     - `config/ff01-455323-24aa6cec6617.json` - Google Sheets API用の認証情報
+   - 初回実行時に`token.json`は自動生成されます
+
+4. **必要なディレクトリの作成**
+   ```
+   mkdir -p data orders invoices
+   ```
+
+5. **設定ファイルの確認と更新**
+   - `config/config.js`のスプレッドシートIDやプリンタ設定を環境に合わせて更新
+
 ## プロジェクト構造
 
 ```
