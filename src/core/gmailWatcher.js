@@ -7,6 +7,7 @@ const {authenticate} = require('@google-cloud/local-auth');
 const { processExcelAndUpdateSheet } = require('./excelProcessor');
 const { processOrderFile } = require('./orderFileGenerator');
 const {google} = require('googleapis');
+const config = require('../../config/config');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
@@ -240,7 +241,7 @@ async function watchUser(auth) {
         const lastCheckTime = await getLastCheckTime();
         
         // 前回のチェック時間以降のメールを検索するクエリを作成
-        const query = `from:taiga-watanabe@kanto-unyu.co.jp after:${lastCheckTime}`;
+        const query = `from:${config.MAIL_SEARCH_CONFIG.FROM_EMAIL} after:${lastCheckTime}`;
         console.log(`メール検索クエリ: ${query}`);
         
         const messages = await listMessages(auth, query);
@@ -259,7 +260,7 @@ async function watchUser(auth) {
 async function stopWatchUser(auth) {
     const gmail = google.gmail({version: 'v1', auth});
     const res = await gmail.users.stop ({
-        userId: 'since1957jt@gmail.com'
+        userId: 'me'
     });
 
     console.log(res);
