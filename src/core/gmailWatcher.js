@@ -149,8 +149,11 @@ async function processAttachments(auth, message) {
             // 処理が実行された場合のみ、発注用ファイルを生成し、印刷する
             if (processed) {
                 try {
-                    const orderFilePath = await processOrderFile(uniqueFilePath, true); // 第2引数のtrueは印刷を有効にする
-                    console.log(`発注用ファイルを生成し、印刷しました: ${orderFilePath}`);
+                    const orderFilePaths = await processOrderFile(uniqueFilePath, true); // 第2引数のtrueは印刷を有効にする
+                    console.log(`発注用ファイルを生成し、印刷しました: ${orderFilePaths.length}件`);
+                    orderFilePaths.forEach((filePath, index) => {
+                        console.log(`発注ファイル ${index + 1}: ${filePath}`);
+                    });
                 } catch (error) {
                     console.error(`発注用ファイル生成・印刷中にエラーが発生しました: ${error.message}`);
                 }
