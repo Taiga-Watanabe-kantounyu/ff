@@ -28,9 +28,11 @@ function loadProcessedSheets() {
 
 async function processExcelAndUpdateSheet(directoryPath, messageId, internalDate) {
     const processedFiles = loadProcessedSheets();
-    const uniqueId = `${messageId}-${internalDate}`;
+    // ファイル名を取得して一意のIDに含める
+    const fileName = path.basename(directoryPath);
+    const uniqueId = `${messageId}-${internalDate}-${fileName}`;
     if (processedFiles.includes(uniqueId)) {
-        console.log(`メールID: ${messageId} は既に処理済みです。スキップします。`);
+        console.log(`ファイル: ${fileName} (メールID: ${messageId}) は既に処理済みです。スキップします。`);
         return false; // 処理をスキップした場合はfalseを返す
     }
     try {
@@ -263,7 +265,8 @@ try {
         // 処理が完全に成功した場合のみ、処理済みファイルを保存
         if (uniqueId) {
             saveProcessedSheet(uniqueId);
-            console.log(`メールID: ${uniqueId.split('-')[0]} を処理済みとして記録しました。`);
+            const fileName = uniqueId.split('-')[2] || 'unknown';
+            console.log(`ファイル: ${fileName} (メールID: ${uniqueId.split('-')[0]}) を処理済みとして記録しました。`);
         }
     } catch (updateErr) {
         console.error(`スプレッドシート更新中にエラーが発生しました: ${updateErr.message}`);

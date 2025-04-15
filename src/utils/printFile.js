@@ -30,14 +30,26 @@ async function printFile(filePath) {
     // ファイルの絶対パスを取得
     const absolutePath = path.resolve(filePath);
     
-    // PowerShellコマンドを構築
-    // Start-Process: 指定されたプログラムを起動
-    // -FilePath: 起動するプログラムのパス
-    // -Verb Print: 印刷アクションを実行
-    // -ArgumentList: プログラムに渡す引数
-    const command = `powershell -Command "Start-Process -FilePath '${absolutePath}' -Verb Print -ArgumentList '/d:${PRINTER_NAME}'"`;
+    // PowerShellスクリプトを構築
+    // 印刷後にExcelを閉じるスクリプト
+    const psScript = `
+      $excel = New-Object -ComObject Excel.Application
+      $excel.Visible = $false
+      $workbook = $excel.Workbooks.Open("${absolutePath}")
+      $workbook.PrintOut()
+      Start-Sleep -Seconds 2
+      $workbook.Close($false)
+      $excel.Quit()
+      [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+      [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+      [System.GC]::Collect()
+      [System.GC]::WaitForPendingFinalizers()
+    `;
     
-    console.log(`印刷コマンドを実行します: ${command}`);
+    // PowerShellコマンドを構築
+    const command = `powershell -Command "${psScript}"`;
+    
+    console.log(`印刷コマンドを実行します（印刷後にExcelを閉じます）`);
     
     // コマンドを実行
     return new Promise((resolve, reject) => {
