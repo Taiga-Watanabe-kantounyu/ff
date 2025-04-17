@@ -93,6 +93,12 @@ mkdir -p data orders invoices
    ```
    これにより`data/deliveryMaster.json`が生成されます
 
+### テンプレートファイルの準備
+
+1. `templates/saito_irai.xlsx.example.txt`を参考に、発注用テンプレートファイルを作成
+2. 作成したファイルを`templates/saito_irai.xlsx`として保存
+3. テンプレートファイルには、レイアウト情報（フォント、罫線、色など）が含まれるようにしてください
+
 ## 7. 初回実行
 
 Gmail監視機能を初めて実行すると、ブラウザが開いてGoogleアカウントへのアクセス許可を求められます。許可すると`config/token.json`が生成されます。
