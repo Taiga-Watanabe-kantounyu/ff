@@ -22,5 +22,8 @@ data/ffmasta.csv
 orders/
 invoices/
 
+# テンプレートファイル（機密情報を含む）
+templates/saito_irai.xlsx
+
 # Node.js
 node_modules/
