@@ -2,7 +2,27 @@
 
 このプロジェクトは、Gmail APIを使用してメールボックスの変更を監視し、添付ファイル（Excelファイル）を処理して、Googleスプレッドシートに転記し、発注用ファイルを生成するシステムです。
 
-## 他のPCでのセットアップ手順
+## 機密情報の取り扱いについて
+
+このリポジトリは、機密情報（認証情報、お届け先情報など）を含まずに公開されています。実際に使用する際は、以下のファイルを適切に設定する必要があります：
+
+- **認証情報**：
+  - `creds.json` - Gmail API用の認証情報
+  - `service-account-key.json` - Google Sheets API用の認証情報
+  - `token.json` - アクセストークン（初回実行時に自動生成）
+
+- **設定ファイル**：
+  - `config.js` - スプレッドシートID、プリンタ設定などの設定情報
+
+- **データファイル**：
+  - `data/ffmasta.csv` - お届け先マスタCSV
+  - `data/freightMaster.json` - お届け先マスタJSON
+  - `data/processed_sheets.json` - 処理済みシート記録
+  - `data/last_mail_check.json` - 最終メールチェック時間
+
+これらのファイルは`.gitignore`に登録されており、リポジトリには含まれていません。代わりに、各ファイルのサンプル（`.example`拡張子付き）が提供されています。
+
+## セットアップ手順
 
 1. **リポジトリのクローン**
    ```
@@ -15,18 +35,27 @@
    npm install
    ```
 
-3. **認証情報の設定**
+3. **サンプルファイルから実際のファイルを作成**
+   ```
+   cp config/config.js.example config/config.js
+   cp data/ffmasta.csv.example data/ffmasta.csv
+   cp data/freightMaster.json.example data/freightMaster.json
+   cp data/processed_sheets.json.example data/processed_sheets.json
+   cp data/last_mail_check.json.example data/last_mail_check.json
+   ```
+
+4. **認証情報の設定**
    - Google Cloud Consoleから認証情報を取得し、以下のファイルを配置：
      - `config/creds.json` - Gmail API用の認証情報
-     - `config/ff01-455323-24aa6cec6617.json` - Google Sheets API用の認証情報
+     - `config/service-account-key.json` - Google Sheets API用の認証情報
    - 初回実行時に`token.json`は自動生成されます
 
-4. **必要なディレクトリの作成**
+5. **必要なディレクトリの作成**
    ```
    mkdir -p data orders invoices
    ```
 
-5. **設定ファイルの確認と更新**
+6. **設定ファイルの確認と更新**
    - `config/config.js`のスプレッドシートIDやプリンタ設定を環境に合わせて更新
 
 ## プロジェクト構造
@@ -46,7 +75,7 @@ ff_2/
 ├── config/               # 設定ファイル
 │   ├── config.js                 # アプリケーション設定
 │   ├── creds.json                # Gmail API認証情報
-│   ├── ff01-455323-24aa6cec6617.json # Google Sheets API認証情報
+│   ├── service-account-key.json  # Google Sheets API認証情報
 │   └── token.json                # アクセストークン
 ├── data/                 # データファイル
 │   ├── deliveryMaster.json       # お届け先マスタ
@@ -111,7 +140,7 @@ ff_2/
 
 2. 認証情報の設定
    - `config/creds.json` - Gmail API用の認証情報
-   - `config/ff01-455323-24aa6cec6617.json` - Google Sheets API用の認証情報
+   - `config/service-account-key.json` - Google Sheets API用の認証情報
 
 3. 設定ファイルの確認
    - `config/config.js` - スプレッドシートIDなどの設定

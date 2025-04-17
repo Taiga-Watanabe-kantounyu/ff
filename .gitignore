@@ -1,12 +1,22 @@
 # 認証情報
+creds.json
+ff01-455323-24aa6cec6617.json
+service-account-key.json
+token.json
 config/creds.json
 config/ff01-455323-24aa6cec6617.json
+config/service-account-key.json
 config/token.json
+
+# 設定ファイル（実際の設定値）
+config.js
 
 # データファイル
 data/deliveryMaster.json
 data/processed_sheets.json
 data/last_mail_check.json
+data/freightMaster.json
+data/ffmasta.csv
 
 # 生成されたファイル
 orders/

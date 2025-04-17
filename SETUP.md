@@ -28,7 +28,24 @@ npm install
 - googleapis
 - xlsx
 
-## 3. 認証情報の設定
+## 3. サンプルファイルから実際のファイルを作成
+
+このリポジトリは、機密情報（認証情報、お届け先情報など）を含まずに公開されています。実際に使用するには、サンプルファイルから実際のファイルを作成する必要があります。
+
+```bash
+# 設定ファイル
+cp config/config.js.example config/config.js
+
+# データファイル
+cp data/ffmasta.csv.example data/ffmasta.csv
+cp data/freightMaster.json.example data/freightMaster.json
+cp data/processed_sheets.json.example data/processed_sheets.json
+cp data/last_mail_check.json.example data/last_mail_check.json
+```
+
+作成したファイルを環境に合わせて編集してください。特に、`config/config.js`のスプレッドシートIDやプリンタ設定は必ず更新する必要があります。
+
+## 4. 認証情報の設定
 
 ### Gmail API用の認証情報
 
@@ -50,7 +67,7 @@ npm install
 6. 「完了」をクリック
 7. 作成したサービスアカウントを選択
 8. 「鍵」タブ→「鍵を追加」→「新しい鍵を作成」→「JSON」を選択
-9. ダウンロードしたJSONファイルを`config/ff01-455323-24aa6cec6617.json`として保存
+9. ダウンロードしたJSONファイルを`config/service-account-key.json`として保存
 
 ## 4. 必要なディレクトリの作成
 

@@ -1,0 +1,16 @@
+{
+  "processed_files": [
+    {
+      "filename": "sample_order_20250401.xlsx",
+      "processed_at": "2025-04-01T10:15:30.123Z",
+      "message_id": "sample_message_id_12345",
+      "internal_date": "2025-04-01T09:30:00.000Z"
+    },
+    {
+      "filename": "sample_order_20250402.xlsx",
+      "processed_at": "2025-04-02T14:22:45.678Z",
+      "message_id": "sample_message_id_67890",
+      "internal_date": "2025-04-02T13:45:00.000Z"
+    }
+  ]
+}
