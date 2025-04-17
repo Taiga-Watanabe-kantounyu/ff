@@ -20,6 +20,9 @@
   - `data/processed_sheets.json` - 処理済みシート記録
   - `data/last_mail_check.json` - 最終メールチェック時間
 
+- **テンプレートファイル**：
+  - `templates/saito_irai.xlsx` - 発注用テンプレートファイル
+
 これらのファイルは`.gitignore`に登録されており、リポジトリには含まれていません。代わりに、各ファイルのサンプル（`.example`拡張子付き）が提供されています。
 
 ## セットアップ手順
