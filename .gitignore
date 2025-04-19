@@ -17,6 +17,7 @@ data/processed_sheets.json
 data/last_mail_check.json
 data/freightMaster.json
 data/ffmasta.csv
+ffmasta.csv
 
 # 生成されたファイル
 orders/

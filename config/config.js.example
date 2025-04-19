@@ -27,9 +27,28 @@ const PRINTER_CONFIG = {
   COPIES: 1
 };
 
+// 請求書生成設定
+const INVOICE_CONFIG = {
+  // 請求書生成を有効にするかどうか
+  ENABLE_INVOICE_GENERATION: true,
+  
+  // 請求書生成タイミング
+  // 'end-of-month': 月末の最終チェック時に生成（当月分）
+  // 'first-of-month': 月初の最初のチェック時に生成（前月分）
+  // 'specific-day': 特定の日に生成（前月分）
+  INVOICE_TIMING: 'end-of-month',
+  
+  // 特定の日を指定する場合の日付（1-31）
+  SPECIFIC_DAY: 1,
+  
+  // 請求書の出力ディレクトリ
+  OUTPUT_DIRECTORY: './billing/invoices'
+};
+
 module.exports = {
   SPREADSHEET_ID,
   CREDENTIALS_PATH,
   PRINTER_CONFIG,
-  MAIL_SEARCH_CONFIG
+  MAIL_SEARCH_CONFIG,
+  INVOICE_CONFIG
 };

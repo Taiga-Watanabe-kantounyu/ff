@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>請求書</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Noto Sans JP';
+      font-style: normal;
+      font-weight: 400;
+      src: url(https://fonts.gstatic.com/s/notosansjp/v42/-F62fjtqLzI2JPCgQBnw7HFow2oe2EcP5pp0erwTqsSWs9Jezazjcb4.0.woff2) format('woff2');
+    }
+    @font-face {
+      font-family: 'Noto Sans JP';
+      font-style: normal;
+      font-weight: 700;
+      src: url(https://fonts.gstatic.com/s/notosansjp/v42/-F6pfjtqLzI2JPCgQBnw7HFQei0q1H1hj-sNFQ.woff2) format('woff2');
+    }
+    
+    body {
+      background-color: #f5f7fa;
+      font-family: 'Noto Sans JP', sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      padding: 40px 20px;
+      -webkit-print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .invoice-container {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 700px;
+      background-color: #fff;
+      margin: 0 auto;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      page-break-inside: avoid;
+    }
+    
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+      font-weight: 700;
+    }
+    
+    p {
+      margin: 8px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      table-layout: fixed;
+    }
+    
+    th {
+      background-color: #4a90e2 !important;
+      color: #fff;
+      padding: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      border: 1px solid #ccc;
+    }
+    
+    td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+      font-size: 15px;
+      vertical-align: middle;
+    }
+    
+    .total-row td {
+      font-weight: bold;
+      background-color: #f0f4f8 !important;
+    }
+    
+    .footer-info {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ccc;
+      font-size: 15px;
+      color: #333;
+      page-break-inside: avoid;
+    }
+    
+    /* ダウンロードボタン */
+    .pdf-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border: none;
+      background: #4a90e2;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    
+    /* 印刷時のスタイル */
+    @media print {
+      body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .invoice-container {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 15px;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      
+      th {
+        background-color: #4a90e2 !important;
+        color: #fff !important;
+      }
+      
+      .total-row td {
+        background-color: #f0f4f8 !important;
+      }
+      
+      .pdf-button {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <h2>請求書</h2>
+    <p><strong>請求先：</strong> {{customerName}}</p>
+    <p><strong>請求日：</strong> {{invoiceDate}}</p>
+    <p><strong>請求期間：</strong> {{periodStart}} 〜 {{periodEnd}}</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 20%;">配送先/日付</th>
+          <th style="width: 10%;">ランク</th>
+          <th style="width: 30%;">品名</th>
+          <th style="width: 10%;">数量</th>
+          <th style="width: 15%;">個口当たり</th>
+          <th style="width: 15%;">運賃合計</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- BEGIN items -->
+        {{itemsHtml}}
+        <!-- END items -->
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="5" style="text-align: right;">合計</td>
+          <td>¥{{grandTotal}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="footer-info">
+      <p><strong>振込先：</strong> {{bankInfo}}</p>
+      <hr style="margin: 15px 0; border-top: 1px solid #ddd;">
+      <div style="text-align: center; margin-top: 15px;">
+        <p><strong>{{companyName}}</strong></p>
+        <p>{{companyAddress}}</p>
+        <p>TEL: {{companyTel}} / FAX: {{companyFax}}</p>
+      </div>
+    </div>
+  </div>
+  <button onclick="downloadPDF()" class="pdf-button">
+    PDFでダウンロード
+  </button>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    function downloadPDF() {
+      // PDF生成前にコンテナを一時的に調整
+      const element = document.querySelector('.invoice-container');
+      const originalPadding = element.style.padding;
+      const originalMargin = element.style.margin;
+      const originalMaxWidth = element.style.maxWidth;
+      
+      // PDFのための最適化：センタリングを維持しつつ適切な余白を設定
+      element.style.padding = '15mm';
+      element.style.margin = '0 auto';
+      element.style.boxShadow = 'none';
+      element.style.borderRadius = '0';
+      element.style.maxWidth = '170mm'; // A4幅に合わせて調整
+      
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: '請求書.pdf',
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: element.offsetWidth,
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm',
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true,
+          precision: 16
+        },
+        pagebreak: { mode: 'avoid-all', before: '.page-break-before', after: '.page-break-after' }
+      };
+      
+      // 処理中表示
+      const downloadBtn = document.querySelector('.pdf-button');
+      const originalText = downloadBtn.textContent;
+      downloadBtn.textContent = '処理中...';
+      downloadBtn.disabled = true;
+      
+      // PDF生成処理
+      html2pdf()
+        .from(element)
+        .set(opt)
+        .save()
+        .then(() => {
+          // 処理完了後に元のスタイルに戻す
+          element.style.padding = originalPadding;
+          element.style.margin = originalMargin;
+          element.style.maxWidth = originalMaxWidth;
+          element.style.boxShadow = '';
+          element.style.borderRadius = '';
+          
+          setTimeout(() => {
+            downloadBtn.textContent = originalText;
+            downloadBtn.disabled = false;
+          }, 1000);
+        })
+        .catch(err => {
+          // エラー発生時も元のスタイルに戻す
+          element.style.padding = originalPadding;
+          element.style.margin = originalMargin;
+          element.style.maxWidth = originalMaxWidth;
+          element.style.boxShadow = '';
+          element.style.borderRadius = '';
+          
+          console.error('PDF生成エラー:', err);
+          downloadBtn.textContent = originalText;
+          downloadBtn.disabled = false;
+          alert('PDFの生成中にエラーが発生しました。もう一度お試しください。');
+        });
+    }
+  </script>
+</body>
+</html>

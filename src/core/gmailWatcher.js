@@ -6,6 +6,7 @@ const xlsx = require('xlsx');
 const {authenticate} = require('@google-cloud/local-auth');
 const { processExcelAndUpdateSheet } = require('./excelProcessor');
 const { processOrderFile } = require('./orderFileGenerator');
+const { generateMonthlyInvoice } = require('../utils/invoiceGenerator');
 const {google} = require('googleapis');
 const config = require('../../config/config');
 
@@ -240,23 +241,83 @@ async function watchUser(auth) {
 
     // Set up a loop to continuously check for new messages
     setInterval(async () => {
-        // 前回のチェック時間を取得
-        const lastCheckTime = await getLastCheckTime();
-        
-        // 前回のチェック時間以降のメールを検索するクエリを作成
-        const query = `from:${config.MAIL_SEARCH_CONFIG.FROM_EMAIL} after:${lastCheckTime}`;
-        console.log(`メール検索クエリ: ${query}`);
-        
-        const messages = await listMessages(auth, query);
-        console.log(`${messages.length}件の新しいメールを検出しました`);
-        
-        for (const message of messages) {
-            const fullMessage = await getMessage(auth, message.id);
-            await processAttachments(auth, fullMessage);
+        try {
+            // 前回のチェック時間を取得
+            const lastCheckTime = await getLastCheckTime();
+            
+            // 前回のチェック時間以降のメールを検索するクエリを作成
+            const query = `from:${config.MAIL_SEARCH_CONFIG.FROM_EMAIL} after:${lastCheckTime}`;
+            console.log(`メール検索クエリ: ${query}`);
+            
+            const messages = await listMessages(auth, query);
+            console.log(`${messages.length}件の新しいメールを検出しました`);
+            
+            for (const message of messages) {
+                const fullMessage = await getMessage(auth, message.id);
+                await processAttachments(auth, fullMessage);
+            }
+            
+            // 現在の時間を最後のチェック時間として記録
+            await updateLastCheckTime();
+            
+            // 請求書生成が有効な場合、設定に応じて請求書を生成
+            if (config.INVOICE_CONFIG.ENABLE_INVOICE_GENERATION) {
+                const now = new Date();
+                const currentDay = now.getDate();
+                const currentMonth = now.getMonth() + 1;
+                const currentYear = now.getFullYear();
+                const lastDayOfMonth = new Date(currentYear, currentMonth, 0).getDate();
+                
+                // 請求書生成タイミングに応じて処理
+                switch(config.INVOICE_CONFIG.INVOICE_TIMING) {
+                    case 'end-of-month':
+                        // 月末の場合
+                        if (currentDay === lastDayOfMonth) {
+                            console.log(`月末（${currentYear}年${currentMonth}月${currentDay}日）のため、請求書を生成します...`);
+                            const spreadsheetUrl = await generateMonthlyInvoice(true); // 現在の月の請求書を生成
+                            if (spreadsheetUrl) {
+                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
+                            } else {
+                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
+                            }
+                        }
+                        break;
+                        
+                    case 'first-of-month':
+                        // 月初の場合
+                        if (currentDay === 1) {
+                            console.log(`月初（${currentYear}年${currentMonth}月${currentDay}日）のため、前月の請求書を生成します...`);
+                            const spreadsheetUrl = await generateMonthlyInvoice(); // 前月の請求書を生成
+                            if (spreadsheetUrl) {
+                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
+                            } else {
+                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
+                            }
+                        }
+                        break;
+                        
+                    case 'specific-day':
+                        // 特定の日の場合
+                        const specificDay = parseInt(config.INVOICE_CONFIG.SPECIFIC_DAY);
+                        if (currentDay === specificDay) {
+                            console.log(`指定日（${currentYear}年${currentMonth}月${currentDay}日）のため、前月の請求書を生成します...`);
+                            const spreadsheetUrl = await generateMonthlyInvoice(); // 前月の請求書を生成
+                            if (spreadsheetUrl) {
+                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
+                            } else {
+                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
+                            }
+                        }
+                        break;
+                        
+                    default:
+                        console.log(`未対応の請求書生成タイミング: ${config.INVOICE_CONFIG.INVOICE_TIMING}`);
+                        break;
+                }
+            }
+        } catch (error) {
+            console.error(`メールチェック中にエラーが発生しました: ${error.message}`);
         }
-        
-        // 現在の時間を最後のチェック時間として記録
-        await updateLastCheckTime();
     }, 60000); // Check every 60 seconds
 }
 
