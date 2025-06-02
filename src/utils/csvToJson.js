@@ -29,8 +29,14 @@ function convertCsvToJson(csvFilePath) {
     const phoneIndex = headers.findIndex(header => header.includes('電話'));
     const formalNameIndex = headers.findIndex(header => header.includes('正式名称'));
     const leadTimeIndex = headers.findIndex(header => header.includes('リードタイム'));
-    const bRankFeeIndex = headers.findIndex(header => header.includes('Bランク'));
-    const aRankFeeIndex = headers.findIndex(header => header.includes('Aランク'));
+    const bRankFeeIndex = headers.findIndex(header => header === 'Bランク' || header.includes('Bランク（通常）'));
+    const aRankFeeIndex = headers.findIndex(header => header === 'Aランク' || header.includes('Aランク（通常）'));
+    const bRankFeeLowIndex = headers.findIndex(header => header.includes('Bランク5ケース以下') || header.includes('Bランク（5ケース以下）'));
+    const aRankFeeLowIndex = headers.findIndex(header => header.includes('Aランク5ケース以下') || header.includes('Aランク（5ケース以下）'));
+    const cRankFeeIndex = headers.findIndex(header => header === 'Cランク' || header.includes('Cランク（通常）'));
+    const cRankFeeLowIndex = headers.findIndex(header => header.includes('Cランク5ケース以下') || header.includes('Cランク（5ケース以下）'));
+    const dRankFeeIndex = headers.findIndex(header => header === 'Dランク' || header.includes('Dランク（通常）'));
+    const dRankFeeLowIndex = headers.findIndex(header => header.includes('Dランク5ケース以下') || header.includes('Dランク（5ケース以下）'));
     
     // 既存のfreightMaster.jsonを読み込む（存在する場合）
     let existingData = {};
@@ -60,11 +66,18 @@ function convertCsvToJson(csvFilePath) {
         const aRankFee = aRankFeeIndex >= 0 && aRankFeeIndex < values.length ? parseInt(values[aRankFeeIndex].trim()) || 0 : 0;
         
         result[deliveryName] = {
+          deliveryName: deliveryName,
           formalName: formalName,
-          address: values[2].trim(), // 正式名称の列が追加されたので、住所は2列目になる
+          address: values[2].trim(),
           leadTime: leadTime,
+          cRankFee: cRankFeeIndex >= 0 && cRankFeeIndex < values.length ? parseInt(values[cRankFeeIndex].trim()) || 0 : 0,
           bRankFee: bRankFee,
           aRankFee: aRankFee,
+          dRankFee: dRankFeeIndex >= 0 && dRankFeeIndex < values.length ? parseInt(values[dRankFeeIndex].trim()) || 0 : 0,
+          cRankFeeLow: cRankFeeLowIndex >= 0 && cRankFeeLowIndex < values.length ? parseInt(values[cRankFeeLowIndex].trim()) || 0 : 0,
+          bRankFeeLow: bRankFeeLowIndex >= 0 && bRankFeeLowIndex < values.length ? parseInt(values[bRankFeeLowIndex].trim()) || 0 : 0,
+          aRankFeeLow: aRankFeeLowIndex >= 0 && aRankFeeLowIndex < values.length ? parseInt(values[aRankFeeLowIndex].trim()) || 0 : 0,
+          dRankFeeLow: dRankFeeLowIndex >= 0 && dRankFeeLowIndex < values.length ? parseInt(values[dRankFeeLowIndex].trim()) || 0 : 0,
           phone: phone
         };
       }

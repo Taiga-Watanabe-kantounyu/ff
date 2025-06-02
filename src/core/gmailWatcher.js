@@ -9,9 +9,14 @@ const { processOrderFile } = require('./orderFileGenerator');
 const { generateMonthlyInvoice } = require('../utils/invoiceGenerator');
 const {google} = require('googleapis');
 const config = require('../../config/config');
+const { sendErrorMail } = require('../utils/sendErrorMail');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://mail.google.com/'
+];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -155,6 +160,12 @@ async function processAttachments(auth, message) {
                     orderFilePaths.forEach((filePath, index) => {
                         console.log(`発注ファイル ${index + 1}: ${filePath}`);
                     });
+                    sendErrorMail(
+                      '【発注書印刷完了通知】',
+                      `発注書の印刷が完了しました。\n件数: ${orderFilePaths.length}\nファイル一覧:\n${orderFilePaths.join('\n')}`,
+                      undefined,
+                      globalAuth
+                    );
                 } catch (error) {
                     console.error(`発注用ファイル生成・印刷中にエラーが発生しました: ${error.message}`);
                 }
@@ -317,6 +328,7 @@ async function watchUser(auth) {
             }
         } catch (error) {
             console.error(`メールチェック中にエラーが発生しました: ${error.message}`);
+            sendErrorMail('【Gmail監視エラー】メールチェック中にエラー', `${error.stack || error}`, undefined, globalAuth);
         }
     }, 60000); // Check every 60 seconds
 }
@@ -330,4 +342,22 @@ async function stopWatchUser(auth) {
     console.log(res);
 }
 
-authorize().then(watchUser).catch(console.error);
+process.on('uncaughtException', (err) => {
+  console.error('uncaughtException:', err);
+  sendErrorMail('【Gmail監視エラー】uncaughtException発生', `${err.stack || err}`, undefined, globalAuth);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('unhandledRejection:', reason);
+  sendErrorMail('【Gmail監視エラー】unhandledRejection発生', `${reason.stack || reason}`, undefined, globalAuth);
+});
+
+let globalAuth = null;
+
+authorize().then(async (auth) => {
+  globalAuth = auth;
+  await watchUser(auth);
+}).catch(async (err) => {
+  console.error(err);
+  await sendErrorMail('【Gmail監視エラー】起動時エラー', `${err.stack || err}`, undefined, globalAuth);
+});

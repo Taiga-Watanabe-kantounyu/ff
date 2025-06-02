@@ -30,14 +30,14 @@ async function printFile(filePath) {
     // ファイルの絶対パスを取得
     const absolutePath = path.resolve(filePath);
     
-    // PowerShellコマンドを構築
-    // 1. Start-Process: 指定されたプログラムを起動して印刷
-    // 2. 印刷後、開いているExcelプロセスを閉じる
-    const command = `powershell -Command "Start-Process -FilePath '${absolutePath}' -Verb Print -ArgumentList '/d:${PRINTER_NAME}'; Start-Sleep -Seconds 5; Get-Process excel -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() }"`;
-    
-    console.log(`印刷コマンドを実行します（印刷後にExcelを閉じます）`);
-    
-    // コマンドを実行
+    // PowerShellスクリプトを生成してExcel印刷を同期的に実行
+  // print_excel.ps1 を呼び出し
+  const scriptPath = path.resolve(__dirname, '../../print_excel.ps1');
+  const command = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" "${filePath}"`;
+
+    console.log(`PowerShellでExcel印刷（完了まで待機し自動で閉じます）`);
+    console.log(`実行コマンド: ${command}`);
+
     return new Promise((resolve, reject) => {
       exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -46,15 +46,15 @@ async function printFile(filePath) {
           reject(error);
           return;
         }
-        
+
         console.log(`ファイルを印刷しました: ${filePath}`);
         console.log(`使用プリンタ: ${PRINTER_NAME}`);
         console.log(`印刷部数: ${COPIES}`);
-        
+
         if (stdout) {
           console.log(`stdout: ${stdout}`);
         }
-        
+
         resolve();
       });
     });

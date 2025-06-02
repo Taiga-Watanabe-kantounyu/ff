@@ -45,10 +45,25 @@ const INVOICE_CONFIG = {
   OUTPUT_DIRECTORY: './billing/invoices'
 };
 
+// 通知メール設定
+const NOTIFY_MAIL_CONFIG = {
+  // 通知メール送信を有効にするかどうか
+  ENABLE_NOTIFICATION: true,
+  // 送信元Gmailアドレス
+  USER: 'あなたのGmailアドレスを入力してください',
+  // SMTPパスワードまたはアプリパスワード
+  PASS: 'あなたのSMTPパスワードを入力してください',
+  // 通知先メールアドレス（カンマ区切りで複数可）
+  TO: '通知先メールアドレスを入力してください',
+  // デフォルト件名
+  SUBJECT: '【通知】システムイベント'
+};
+
 module.exports = {
   SPREADSHEET_ID,
   CREDENTIALS_PATH,
   PRINTER_CONFIG,
   MAIL_SEARCH_CONFIG,
-  INVOICE_CONFIG
+  INVOICE_CONFIG,
+  NOTIFY_MAIL_CONFIG
 };

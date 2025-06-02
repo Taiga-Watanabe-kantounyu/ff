@@ -45,7 +45,6 @@ function openPdfFile(filePath) {
     }
 }
 
-
 async function main() {
     try {
         const args = process.argv.slice(2);
@@ -185,11 +184,14 @@ function prepareInvoiceData(data, year, month) {
     let itemsHtml = '';
     let currentDelivery = '';
     
-    // お届け先ごとのデータ生成
-    Object.entries(data.deliveryTotals).forEach(([deliveryName, deliveryData]) => {
+    // お届け先ごとのデータ生成（テーブルフッターなし）
+    Object.entries(data.deliveryTotals).forEach(([deliveryName, deliveryData], index) => {
+        // 2番目以降の配送先から改ページを入れる
+        const pageBreakClass = index > 0 ? 'page-break-before' : '';
+        
         // お届け先の見出し行
         itemsHtml += `
-            <tr class="delivery-header">
+            <tr class="delivery-header ${pageBreakClass}">
                 <td><strong>${deliveryName}</strong></td>
                 <td></td>
                 <td></td>
@@ -199,32 +201,7 @@ function prepareInvoiceData(data, year, month) {
             </tr>
         `;
         
-        // ランク別小計
-        if (deliveryData.aRankTotal > 0) {
-            itemsHtml += `
-                <tr class="rank-total">
-                    <td></td>
-                    <td>Aランク小計</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>¥${formatNumberToCurrency(deliveryData.aRankTotal)}</td>
-                </tr>
-            `;
-        }
-        
-        if (deliveryData.bRankTotal > 0) {
-            itemsHtml += `
-                <tr class="rank-total">
-                    <td></td>
-                    <td>Bランク小計</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>¥${formatNumberToCurrency(deliveryData.bRankTotal)}</td>
-                </tr>
-            `;
-        }
+        // お届け先ごとのランク別小計は非表示
         
         // 明細行
         deliveryData.items.forEach(item => {
@@ -240,59 +217,54 @@ function prepareInvoiceData(data, year, month) {
             `;
         });
         
-        // 区切り行
-        itemsHtml += `
-            <tr class="separator">
-                <td colspan="6"></td>
-            </tr>
-        `;
+        // 最後のお届け先以外に区切り行を追加
+        if (index < Object.entries(data.deliveryTotals).length - 1) {
+            itemsHtml += `
+                <tr class="separator">
+                    <td colspan="6"></td>
+                </tr>
+            `;
+        }
     });
     
     // 消費税の計算
-    const taxAmount = Math.floor(data.grandTotal * invoiceConfig.TAX_RATE);
+    const taxAmount = Math.round(data.grandTotal * invoiceConfig.TAX_RATE);
     const totalWithTax = data.grandTotal + taxAmount;
     
-    // 集計行
+    // 合計部分の前に空白行を追加して視覚的に分離
     itemsHtml += `
-        <tr class="total-section">
-            <td>小計</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>¥${formatNumberToCurrency(data.grandTotal)}</td>
+        <tr>
+            <td colspan="6" style="height: 20px; border: none;"></td>
         </tr>
         <tr>
-            <td>消費税（10%）</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>¥${formatNumberToCurrency(taxAmount)}</td>
+            <td colspan="6" style="border-top: 2px solid #4a90e2; border-left: none; border-right: none; border-bottom: none; padding: 0;"></td>
         </tr>
         <tr>
-            <td><strong>合計金額</strong></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td><strong>¥${formatNumberToCurrency(totalWithTax)}</strong></td>
+            <td colspan="6" style="text-align: center; font-weight: bold; font-size: 16px; border: none; padding: 15px 0;">【請求書合計】</td>
         </tr>
-        <tr>
-            <td>Aランク小計</td>
+        <tr class="total-section" style="background-color: #f0f4f8;">
+            <td style="text-align: right; font-weight: bold;">小計</td>
             <td></td>
             <td></td>
             <td></td>
             <td></td>
-            <td>¥${formatNumberToCurrency(data.rankTotals.A)}</td>
+            <td style="font-weight: bold;">¥${formatNumberToCurrency(data.grandTotal)}</td>
         </tr>
-        <tr>
-            <td>Bランク小計</td>
+        <tr style="background-color: #f0f4f8;">
+            <td style="text-align: right; font-weight: bold;">消費税（10%）</td>
             <td></td>
             <td></td>
             <td></td>
             <td></td>
-            <td>¥${formatNumberToCurrency(data.rankTotals.B)}</td>
+            <td style="font-weight: bold;">¥${formatNumberToCurrency(taxAmount)}</td>
+        </tr>
+        <tr style="background-color: #e6eff8;">
+            <td style="text-align: right; font-weight: bold; font-size: 16px;">合計金額</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td style="font-weight: bold; font-size: 16px;">¥${formatNumberToCurrency(totalWithTax)}</td>
         </tr>
     `;
     

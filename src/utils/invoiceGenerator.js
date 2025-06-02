@@ -13,6 +13,8 @@ const { SPREADSHEET_ID } = require('../../config/config');
  * @param {string} month - 対象月 (MM)
  * @returns {Promise<Object>} - 請求書生成に必要なデータ
  */
+const { loadDeliveryMaster } = require('../models/deliveryMasterManager');
+
 async function collectInvoiceData(year, month) {
     try {
         // Google Sheets APIの認証
@@ -70,6 +72,9 @@ async function collectInvoiceData(year, month) {
         const rankTotals = { A: 0, B: 0 }; // ランク別合計
         let grandTotal = 0; // 総合計
         
+        // 配送マスタを一括取得
+        const deliveryMaster = loadDeliveryMaster();
+
         const details = targetData.map(row => {
             const pickupDate = row[0] || '';      // 集荷日
             const temperatureZone = row[1] || ''; // 温度帯
@@ -79,7 +84,40 @@ async function collectInvoiceData(year, month) {
             const weight = row[5] || '';          // 重量(kg)
             const quantity = parseInt(row[6]) || 1;  // 数量（個口数）
             const deliveryName = row[7] || '';    // お届け先名
-            const freightPerUnit = parseFloat(row[8]) || 0; // 個口当たりの運賃
+
+            // 配送マスタから該当先情報取得
+            const master = deliveryMaster[deliveryName] || {};
+
+            // ランク判定
+            const rankStr = rank ? rank.toString().toUpperCase() : '';
+            // 5ケース以下はマスタのLow料金を参照
+            let freightPerUnit;
+            if (quantity <= 5) {
+                if (rankStr === 'A') {
+                    freightPerUnit = master.aRankFeeLow !== undefined ? master.aRankFeeLow : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'B') {
+                    freightPerUnit = master.bRankFeeLow !== undefined ? master.bRankFeeLow : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'C') {
+                    freightPerUnit = master.cRankFeeLow !== undefined ? master.cRankFeeLow : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'D') {
+                    freightPerUnit = master.dRankFeeLow !== undefined ? master.dRankFeeLow : parseFloat(row[8]) || 0;
+                } else {
+                    freightPerUnit = parseFloat(row[8]) || 0;
+                }
+            } else {
+                if (rankStr === 'A') {
+                    freightPerUnit = master.aRankFee !== undefined ? master.aRankFee : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'B') {
+                    freightPerUnit = master.bRankFee !== undefined ? master.bRankFee : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'C') {
+                    freightPerUnit = master.cRankFee !== undefined ? master.cRankFee : parseFloat(row[8]) || 0;
+                } else if (rankStr === 'D') {
+                    freightPerUnit = master.dRankFee !== undefined ? master.dRankFee : parseFloat(row[8]) || 0;
+                } else {
+                    freightPerUnit = parseFloat(row[8]) || 0;
+                }
+            }
+
             const totalFreight = freightPerUnit * quantity; // 総運賃 = 個口当たりの運賃 × 個口数
             
             // お届け先ごとの合計を計算

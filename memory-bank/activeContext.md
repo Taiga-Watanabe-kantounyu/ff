@@ -70,5 +70,7 @@
 - `src/utils/puppeteerInvoiceGenerator.js`を新規作成し、HTMLテンプレートからPDFを生成する機能を実装しました。
 - 既存のHTML形式やPDFKit形式の請求書生成機能を残しつつ、Puppeteer形式を新たなデフォルトとして設定しました。
 - `src/tools/generateInvoice.js`を更新し、`--puppeteer`オプションを追加。デフォルトをPuppeteer形式に変更しました。
+- 請求書の生成結果ファイルを `billing/invoices` ディレクトリに保存するように変更しました。
+- `node src/tools/generateInvoice.js 2025 04 --puppeteer` コマンドを実行し、請求書PDFが正常に生成されたことを確認しました。
 - HTMLテンプレートのスタイル情報を完全に保持したPDF生成が可能になり、より高品質な請求書を生成できるようになりました。
 - クライアントサイドでのPDF変換が不要になり、ユーザーはコマンド一つで直接PDF形式の請求書を生成できるようになりました。

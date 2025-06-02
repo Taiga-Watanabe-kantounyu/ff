@@ -92,6 +92,13 @@
       page-break-inside: avoid;
     }
     
+    /* 配送先ごとの改ページ設定 */
+    .page-break-before {
+      page-break-before: always;
+      -webkit-page-break-before: always;
+      break-before: page;
+    }
+    
     /* ダウンロードボタン */
     .pdf-button {
       margin-top: 20px;
@@ -161,23 +168,9 @@
         {{itemsHtml}}
         <!-- END items -->
       </tbody>
-      <tfoot>
-        <tr class="total-row">
-          <td colspan="5" style="text-align: right;">合計</td>
-          <td>¥{{grandTotal}}</td>
-        </tr>
-      </tfoot>
+      <!-- <tfoot>は使用せず、itemsHtmlの中で最後に集計行を表示 -->
     </table>
 
-    <div class="footer-info">
-      <p><strong>振込先：</strong> {{bankInfo}}</p>
-      <hr style="margin: 15px 0; border-top: 1px solid #ddd;">
-      <div style="text-align: center; margin-top: 15px;">
-        <p><strong>{{companyName}}</strong></p>
-        <p>{{companyAddress}}</p>
-        <p>TEL: {{companyTel}} / FAX: {{companyFax}}</p>
-      </div>
-    </div>
   </div>
   <button onclick="downloadPDF()" class="pdf-button">
     PDFでダウンロード
@@ -218,7 +211,7 @@
           compress: true,
           precision: 16
         },
-        pagebreak: { mode: 'avoid-all', before: '.page-break-before', after: '.page-break-after' }
+        pagebreak: { mode: 'avoid-all', before: '.page-break-before' }
       };
       
       // 処理中表示
