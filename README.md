@@ -1,190 +1,130 @@
-# Gmail Watcher
+# FF_2 自動化システム
 
-このプロジェクトは、Gmail APIを使用してメールボックスの変更を監視し、添付ファイル（Excelファイル）を処理して、Googleスプレッドシートに転記し、発注用ファイルを生成するシステムです。
+このプロジェクトは、Gmail API と Google Cloud Pub/Sub を利用し、メール受信から発注ファイル作成・請求書出力までの一連の業務フローを自動化します。
 
-## 機密情報の取り扱いについて
+## 主な機能
 
-このリポジトリは、機密情報（認証情報、お届け先情報など）を含まずに公開されています。実際に使用する際は、以下のファイルを適切に設定する必要があります：
+- Gmail のリアルタイム監視・新着メールの添付 Excel ファイルを取得  
+- 添付 Excel → Google スプレッドシートへの自動転記  
+- スプレッドシートのデータを元に発注用 Excel（saito_irai.xlsx）をテンプレートから生成  
+- 休日・祝日を考慮したリードタイム計算による配送日自動算出  
+- 請求書の HTML テンプレート生成＆Puppeteer による PDF 出力・自動保存・自動印刷  
+- 外部設定（認証情報／スプレッドシートID／プリンタ設定など）による柔軟な管理  
 
-- **認証情報**：
-  - `creds.json` - Gmail API用の認証情報
-  - `service-account-key.json` - Google Sheets API用の認証情報
-  - `token.json` - アクセストークン（初回実行時に自動生成）
+## 必要ファイル（サンプル）
 
-- **設定ファイル**：
-  - `config.js` - スプレッドシートID、プリンタ設定などの設定情報
+| ファイル                                | 役割                                      |
+| --------------------------------------- | ----------------------------------------- |
+| `config/config.js`                      | アプリ設定（スプレッドシートIDなど）     |
+| `config/creds.json`                     | Gmail API 認証情報                        |
+| `config/service-account-key.json`       | Google Sheets API 認証情報               |
+| `data/ffmasta.csv`                      | お届け先マスタ CSV                        |
+| `data/freightMaster.json`               | お届け先マスタ JSON                       |
+| `data/processed_sheets.json`            | 処理済みシート記録                        |
+| `data/last_mail_check.json`             | 最終メールチェック時刻                    |
+| `templates/saito_irai.xlsx`             | 発注用テンプレート                        |
 
-- **データファイル**：
-  - `data/ffmasta.csv` - お届け先マスタCSV
-  - `data/freightMaster.json` - お届け先マスタJSON
-  - `data/processed_sheets.json` - 処理済みシート記録
-  - `data/last_mail_check.json` - 最終メールチェック時間
-
-- **テンプレートファイル**：
-  - `templates/saito_irai.xlsx` - 発注用テンプレートファイル
-
-これらのファイルは`.gitignore`に登録されており、リポジトリには含まれていません。代わりに、各ファイルのサンプル（`.example`拡張子付き）が提供されています。
-
-## セットアップ手順
-
-1. **リポジトリのクローン**
-   ```
-   git clone https://github.com/あなたのユーザー名/ff_2.git
-   cd ff_2
-   ```
-
-2. **依存パッケージのインストール**
-   ```
-   npm install
-   ```
-
-3. **サンプルファイルから実際のファイルを作成**
-   ```
-   cp config/config.js.example config/config.js
-   cp data/ffmasta.csv.example data/ffmasta.csv
-   cp data/freightMaster.json.example data/freightMaster.json
-   cp data/processed_sheets.json.example data/processed_sheets.json
-   cp data/last_mail_check.json.example data/last_mail_check.json
-   ```
-
-4. **認証情報の設定**
-   - Google Cloud Consoleから認証情報を取得し、以下のファイルを配置：
-     - `config/creds.json` - Gmail API用の認証情報
-     - `config/service-account-key.json` - Google Sheets API用の認証情報
-   - 初回実行時に`token.json`は自動生成されます
-
-5. **必要なディレクトリの作成**
-   ```
-   mkdir -p data orders invoices
-   ```
-
-6. **設定ファイルの確認と更新**
-   - `config/config.js`のスプレッドシートIDやプリンタ設定を環境に合わせて更新
-
-## プロジェクト構造
-
-```
-ff_2/
-├── src/                  # ソースコード
-│   ├── core/             # コア機能
-│   │   ├── gmailWatcher.js       # Gmailの監視機能
-│   │   ├── excelProcessor.js     # Excelファイルの処理機能
-│   │   └── orderFileGenerator.js # 発注用ファイル生成機能
-│   ├── utils/            # ユーティリティ
-│   │   ├── checkExcelStructure.js # Excelファイルの構造確認
-│   │   └── csvToJson.js          # CSVからJSONへの変換
-│   └── models/           # データモデル
-│       └── deliveryMasterManager.js # お届け先マスタ管理
-├── config/               # 設定ファイル
-│   ├── config.js                 # アプリケーション設定
-│   ├── creds.json                # Gmail API認証情報
-│   ├── service-account-key.json  # Google Sheets API認証情報
-│   └── token.json                # アクセストークン
-├── data/                 # データファイル
-│   ├── deliveryMaster.json       # お届け先マスタ
-│   ├── processed_sheets.json     # 処理済みシート記録
-│   └── ffmasta.csv               # お届け先マスタCSV
-├── templates/            # テンプレートファイル
-│   └── saito_irai.xlsx           # 発注用テンプレート
-├── docs/                 # ドキュメント
-│   ├── excelフォーマット仕様.md   # Excelフォーマット仕様
-│   ├── processAttachments.md     # 添付ファイル処理仕様
-│   └── 発注仕様.md               # 発注仕様
-├── samples/              # サンプルファイル
-│   ├── 依頼書フォーマット_テスト_発注.xlsx
-│   ├── 依頼書フォーマット_テスト.xlsx
-│   ├── 依頼書フォーマット_テスト2.xlsx
-│   ├── 依頼書フォーマット_テスト3.xlsx
-│   └── 依頼書フォーマット_テスト4.xlsx
-├── tests/                # テストファイル（将来的に追加）
-├── memory-bank/          # メモリーバンク
-│   ├── projectbrief.md
-│   ├── productContext.md
-│   ├── systemPatterns.md
-│   ├── techContext.md
-│   ├── activeContext.md
-│   └── progress.md
-├── package.json          # NPM設定
-└── README.md             # プロジェクト説明
-```
-
-## 機能概要
-
-1. **Gmail監視機能** (`src/core/gmailWatcher.js`)
-   - Gmail APIを使用してメールボックスの変更を監視
-   - 特定の条件に一致するメールの添付ファイルを取得
-
-2. **Excel処理機能** (`src/core/excelProcessor.js`)
-   - 受信したExcelファイルを処理
-   - データをGoogleスプレッドシートに転記
-
-3. **発注ファイル生成機能** (`src/core/orderFileGenerator.js`)
-   - 受注データから発注用ファイルを生成
-   - テンプレートを使用して正しいフォーマットで出力
-
-4. **お届け先マスタ管理** (`src/models/deliveryMasterManager.js`)
-   - お届け先情報（名前、電話番号、住所）の管理
-   - 追加/更新/削除/検索機能
-
-## 使用技術
-
-- Node.js
-- Google Cloud Pub/Sub
-- Gmail API
-- Google Sheets API
-- xlsx / exceljs（Excelファイル処理）
+> ※ サンプルファイルは `*.example` 拡張子で同梱。実運用前にコピーして利用してください。
 
 ## セットアップ
 
-1. 必要なパッケージのインストール
-   ```
-   npm install
-   ```
+```bash
+git clone https://github.com/あなたのユーザー名/ff_2.git
+cd ff_2
 
-2. 認証情報の設定
-   - `config/creds.json` - Gmail API用の認証情報
-   - `config/service-account-key.json` - Google Sheets API用の認証情報
+npm install
 
-3. 設定ファイルの確認
-   - `config/config.js` - スプレッドシートIDなどの設定
+# サンプルファイルの作成
+cp config/config.js.example config/config.js
+cp data/ffmasta.csv.example data/ffmasta.csv
+cp data/freightMaster.json.example data/freightMaster.json
+cp data/processed_sheets.json.example data/processed_sheets.json
+cp data/last_mail_check.json.example data/last_mail_check.json
+cp templates/saito_irai.xlsx.example.txt templates/saito_irai.xlsx
 
-## 使用方法
-
-### Gmail監視の開始
-
+# 必要ディレクトリの作成
+mkdir -p data orders invoices
 ```
+
+## 実行コマンド例
+
+### Gmail 監視
+
+```bash
 node src/core/gmailWatcher.js
 ```
 
-### Excel処理の単独実行
+### 添付 Excel の単独処理
 
-```
-node src/core/excelProcessor.js <Excelファイルパス> [メッセージID] [内部日付]
+```bash
+node src/core/excelProcessor.js <Excelファイルパス> [messageId] [内部日付]
 ```
 
-### 発注ファイル生成の単独実行
+### 発注用ファイル生成
 
-```
+```bash
 node src/core/orderFileGenerator.js <受注ファイルパス>
+```
+
+### 請求書 PDF 出力
+
+```bash
+node src/tools/generateInvoice.js <請求データJSON>
+# または Puppeteer 経由
+node src/utils/puppeteerInvoiceGenerator.js
 ```
 
 ### お届け先マスタ管理
 
-```
-node src/models/deliveryMasterManager.js                     # インタラクティブモード
-node src/models/deliveryMasterManager.js list                # 一覧表示
-node src/models/deliveryMasterManager.js add <名前> <電話> <住所> # 追加/更新
-node src/models/deliveryMasterManager.js delete <名前>       # 削除
-node src/models/deliveryMasterManager.js search <キーワード> # 検索
+```bash
+# インタラクティブモード
+node src/models/deliveryMasterManager.js
+
+# コマンド操作例
+node src/models/deliveryMasterManager.js list
+node src/models/deliveryMasterManager.js add <名前> <電話> <住所>
+node src/models/deliveryMasterManager.js delete <名前>
+node src/models/deliveryMasterManager.js search <キーワード>
 ```
 
-### CSVからお届け先マスタの生成
+### CSV → マスタ JSON 変換
 
-```
+```bash
 node src/utils/csvToJson.js
 ```
 
-## 注意事項
+## プロジェクト構成
 
-- スプレッドシートのシート名は現在「Sheet1」に固定されています。
-- お届け先マスタに登録されていないお届け先の場合、電話番号と住所が空欄になります。
+```
+ff_2/
+├── src/                  # ソースコード
+│   ├── core/             # コア処理
+│   ├── utils/            # 共通ユーティリティ
+│   └── models/           # データモデル
+├── config/               # 設定・認証情報
+├── data/                 # データファイル
+├── templates/            # Excel / HTML テンプレート
+├── orders/               # 発注書出力先
+├── invoices/             # 請求書出力先
+├── memory-bank/          # ドキュメント（メモリーバンク）
+├── README.md             # プロジェクト概要（本ファイル）
+└── SETUP.md              # 詳細セットアップ手順
+```
+
+## 技術スタック
+
+- Node.js  
+- Gmail API, Google Sheets API  
+- Google Cloud Pub/Sub  
+- exceljs / xlsx  
+- Puppeteer  
+
+## GitHub
+
+リポジトリを更新し GitHub に反映する手順:
+
+```bash
+git add .
+git commit -m "Update README"
+git push origin main
+```

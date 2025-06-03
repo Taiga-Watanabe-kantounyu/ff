@@ -22,6 +22,16 @@
 - `orderFileGenerator.js`を修正し、発注用ファイル生成時にテンプレートファイル（saito_irai.xlsx）のセルスタイル情報を保持するように改善。これにより、発注書のレイアウトが正しく反映されるようになった。
 - xlsxライブラリからexceljsライブラリに切り替え、文字サイズと罫線の問題を解決。
 - CSVファイルからJSONマスタを生成する`csvToJson.js`を作成し、お届け先マスタ（deliveryMaster.json）を更新。電話番号情報も含めて変換するように対応。
++ 祝日API（holidays-jp）を実装し、レスポンスをメモリ内キャッシュして呼び出し回数を削減。
++ GmailWatcher→ExcelProcessor→OrderFileGenerator→PrintFileの処理パイプラインをオーケストレーションパターンで統合。
++ sendErrorMailモジュールへのエラー通知をオブザーバーパターンで実装。
++ invoice-config.jsを作成し、請求書設定（税率、会社情報、プリンタ設定など）を一元管理可能にしました。
++ `htmlTemplateRenderer.js`, `formatUtils.js`, `inv_temp.html`を用いたHTMLテンプレート請求書生成機能を実装。
++ `puppeteerInvoiceGenerator.js`を実装し、PuppeteerでサーバーサイドPDF請求書生成機能を追加。
++ generateInvoiceツールに `--puppeteer` オプションを追加し、Puppeteer出力をデフォルト化しました。
++ billing/invoices ディレクトリに請求書ファイルを保存するように変更しました。
++ printFile.js を実装し、請求書の自動印刷機能を追加（config.jsのプリンタ設定読み込み）。
++ config.js に MAIL_SEARCH_CONFIG および sheetName 設定を追加し、動的に読み込むように変更しました。
 
 ## 次のステップ
 - メールボックスの変更通知のさらなるテストと検証。
