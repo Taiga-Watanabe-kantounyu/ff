@@ -73,7 +73,19 @@ async function collectInvoiceData(year, month) {
         let grandTotal = 0; // 総合計
         
         // 配送マスタを一括取得
-        const deliveryMaster = loadDeliveryMaster();
+const deliveryMaster = loadDeliveryMaster();
+
+ // 配送先ごとの合計ケース数を事前計算
+const deliveryQuantities = {};
+targetData.forEach(row => {
+    const qty = parseInt(row[6]) || 1;
+    const name = row[7] || '';
+    const pickupDate = row[0] || '';
+    if (name && pickupDate) {
+        deliveryQuantities[name] = deliveryQuantities[name] || {};
+        deliveryQuantities[name][pickupDate] = (deliveryQuantities[name][pickupDate] || 0) + qty;
+    }
+});
 
         const details = targetData.map(row => {
             const pickupDate = row[0] || '';      // 集荷日
@@ -92,7 +104,8 @@ async function collectInvoiceData(year, month) {
             const rankStr = rank ? rank.toString().toUpperCase() : '';
             // 5ケース以下はマスタのLow料金を参照
             let freightPerUnit;
-            if (quantity <= 5) {
+const dailyQty = ((deliveryQuantities[deliveryName] || {})[pickupDate] || 0);
+if (dailyQty < 5) {
                 if (rankStr === 'A') {
                     freightPerUnit = master.aRankFeeLow !== undefined ? master.aRankFeeLow : parseFloat(row[8]) || 0;
                 } else if (rankStr === 'B') {
