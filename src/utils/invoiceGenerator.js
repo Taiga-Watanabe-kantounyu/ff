@@ -76,6 +76,7 @@ async function collectInvoiceData(year, month) {
 const deliveryMaster = loadDeliveryMaster();
 
  // 配送先ごとの合計ケース数を事前計算
+// ※仕様：同一配送先・同一集荷日ごとに合計5ケース以上なら全商品に5ケース以上料金を適用する
 const deliveryQuantities = {};
 targetData.forEach(row => {
     const qty = parseInt(row[6]) || 1;

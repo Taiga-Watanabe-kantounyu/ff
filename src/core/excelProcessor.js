@@ -142,51 +142,74 @@ async function processSingleExcelFile(filePath, uniqueId) {
     // 運賃マスタを読み込む
     const freightMaster = loadFreightMaster();
     
+    // 配送先・集荷日ごとの合計ケース数を集計（集荷日はC1セル値を使用）
+    const caseCountMap = {};
+    rawData.forEach(row => {
+        const deliveryName = row['H'] || '';
+        const quantity = parseInt(row['G']) || 0;
+        if (!deliveryName || !pickupDate) return;
+        if (!caseCountMap[deliveryName]) caseCountMap[deliveryName] = {};
+        caseCountMap[deliveryName][pickupDate] = (caseCountMap[deliveryName][pickupDate] || 0) + quantity;
+    });
+
     // フォーマット仕様に従ってデータを整形
     const formattedData = rawData.map(row => {
-        // 位置ベースでデータを取得（headerをABCDEで指定しているため）
-        const temperatureZone = row['B'] || ''; // 温度帯（B列）
-        const productCode = row['C'] || '';     // 品番（C列）
-        const productName = row['D'] || '';     // 品名（D列）
-        const rank = row['E'] || '';            // ランク（E列）
-        const weight = row['F'] || '';          // 重量（kg）（F列）
-        const quantity = row['G'] || '';        // 数量（G列）
-        const deliveryName = row['H'] || '';    // お届け先名（H列）
-        
-        console.log(`処理中の行: 配送先=${deliveryName}, ランク=${rank}`);
-        
+        const temperatureZone = row['B'] || '';
+        const productCode = row['C'] || '';
+        const productName = row['D'] || '';
+        const rank = row['E'] || '';
+        const weight = row['F'] || '';
+        const quantity = row['G'] || '';
+        const deliveryName = row['H'] || '';
+
+        // ケース数合計取得（集荷日はC1セル値を使用）
+        const totalCases = (caseCountMap[deliveryName] && caseCountMap[deliveryName][pickupDate]) ? caseCountMap[deliveryName][pickupDate] : 0;
+        console.log(`totalCases: ${totalCases}`);
         // 運賃を計算
         let freight = 0;
         if (deliveryName && freightMaster[deliveryName]) {
-            // ランクの値を確認
-            console.log(`ランク値: "${rank}", 型: ${typeof rank}`);
-            
-            // ランクの値に基づいて運賃を設定
-            if (rank && rank.toString().toUpperCase() === 'A') {
-                freight = freightMaster[deliveryName].aRankFee || 0;
-                console.log(`Aランク運賃: ${freight}`);
-            } else if (rank && rank.toString().toUpperCase() === 'B') {
-                freight = freightMaster[deliveryName].bRankFee || 0;
-                console.log(`Bランク運賃: ${freight}`);
+            const rankStr = rank ? rank.toString().toUpperCase() : '';
+            if (totalCases < 5) {
+                // 5ケース未満はLow料金
+                if (rankStr === 'A') {
+                    freight = freightMaster[deliveryName].aRankFeeLow || 0;
+                } else if (rankStr === 'B') {
+                    freight = freightMaster[deliveryName].bRankFeeLow || 0;
+                } else if (rankStr === 'C') {
+                    freight = freightMaster[deliveryName].cRankFeeLow || 0;
+                } else if (rankStr === 'D') {
+                    freight = freightMaster[deliveryName].dRankFeeLow || 0;
+                } else {
+                    freight = freightMaster[deliveryName].bRankFeeLow || 0;
+                }
             } else {
-                console.log(`未対応のランク: ${rank}, デフォルトの運賃を使用します`);
-                // デフォルトはBランク料金を使用
-                freight = freightMaster[deliveryName].bRankFee || 0;
+                // 5ケース以上は通常料金
+                if (rankStr === 'A') {
+                    freight = freightMaster[deliveryName].aRankFee || 0;
+                } else if (rankStr === 'B') {
+                    freight = freightMaster[deliveryName].bRankFee || 0;
+                } else if (rankStr === 'C') {
+                    freight = freightMaster[deliveryName].cRankFee || 0;
+                } else if (rankStr === 'D') {
+                    freight = freightMaster[deliveryName].dRankFee || 0;
+                } else {
+                    freight = freightMaster[deliveryName].bRankFee || 0;
+                }
             }
         } else {
             console.log(`配送先 "${deliveryName}" の運賃情報が見つかりません`);
         }
-        
+
         return [
-            pickupDate,           // 集荷日（C1セルから取得）
-            temperatureZone,      // 温度帯（B列）
-            productCode,          // 品番（C列）
-            productName,          // 品名（D列）
-            rank,                 // ランク（E列）
-            weight,               // 重量（kg）（F列）
-            quantity,             // 数量（G列）
-            deliveryName,         // お届け先名（H列）
-            freight               // 運賃（I列）
+            pickupDate,
+            temperatureZone,
+            productCode,
+            productName,
+            rank,
+            weight,
+            quantity,
+            deliveryName,
+            freight
         ];
     });
     
