@@ -1,12 +1,12 @@
 /**
- * 月次請求書を手動で生成するためのユーティリティスクリプト（Puppeteer版）
+ * 月次請求明細を手動で生成するためのユーティリティスクリプト（Puppeteer版）
  * 
  * 使用方法：
  *   node src/tools/generateInvoice.js [年] [月]
  * 
  * 例：
- *   node src/tools/generateInvoice.js 2025 04         # 2025年4月の請求書を生成
- *   node src/tools/generateInvoice.js                 # 前月の請求書を生成
+ *   node src/tools/generateInvoice.js 2025 04         # 2025年4月の請求明細を生成
+ *   node src/tools/generateInvoice.js                 # 前月の請求明細を生成
  */
 
 const path = require('path');
@@ -51,8 +51,8 @@ async function main() {
         
         // 引数に基づいて処理を分岐
         if (args.length === 0) {
-            // 引数なしの場合は前月の請求書を生成
-            console.log('前月の請求書をPDFで生成します...');
+            // 引数なしの場合は前月の請求明細を生成
+            console.log('前月の請求明細をPDFで生成します...');
             const invoiceData = await generateMonthlyPuppeteerData();
             
             if (invoiceData) {
@@ -71,44 +71,44 @@ async function main() {
                 }
                 
                 const pdfPath = await generateInvoicePdf(invoiceData, targetYear, targetMonth);
-                console.log(`請求書PDFを生成しました: ${pdfPath}`);
+                console.log(`請求明細PDFを生成しました: ${pdfPath}`);
                 console.log('PDFを開きます...');
                 openPdfFile(pdfPath);
             } else {
-                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
+                console.log('請求明細生成中にエラーが発生したか、対象データがありませんでした。');
             }
         } else if (args.length === 2) {
             // 年と月が指定された場合
             const year = args[0];
             const month = args[1].padStart(2, '0');
             
-            console.log(`${year}年${month}月の請求書をPDF生成します...`);
+            console.log(`${year}年${month}月の請求明細をPDF生成します...`);
             const data = await collectInvoiceData(year, month);
             
             if (data.totalItems === 0) {
-                console.log(`${year}年${month}月のデータが見つかりませんでした。請求書は生成されません。`);
+                console.log(`${year}年${month}月のデータが見つかりませんでした。請求明細は生成されません。`);
                 return;
             }
             
-            // 請求書データの作成
+            // 請求明細データの作成
             const invoiceData = prepareInvoiceData(data, year, month);
             
             // Puppeteerを使用してPDF生成
             const pdfPath = await generateInvoicePdf(invoiceData, year, month);
             
             if (pdfPath) {
-                console.log(`請求書PDFを生成しました: ${pdfPath}`);
+                console.log(`請求明細PDFを生成しました: ${pdfPath}`);
                 console.log('PDFを開きます...');
                 openPdfFile(pdfPath);
             } else {
-                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
+                console.log('請求明細生成中にエラーが発生したか、対象データがありませんでした。');
             }
         } else {
             console.log('使用方法:');
             console.log('  node src/tools/generateInvoice.js [年] [月]');
             console.log('例:');
-            console.log('  node src/tools/generateInvoice.js 2025 04             # 2025年4月の請求書を生成');
-            console.log('  node src/tools/generateInvoice.js                     # 前月の請求書を生成');
+            console.log('  node src/tools/generateInvoice.js 2025 04             # 2025年4月の請求明細を生成');
+            console.log('  node src/tools/generateInvoice.js                     # 前月の請求明細を生成');
         }
     } catch (error) {
         console.error('エラーが発生しました:', error.message);
@@ -117,8 +117,8 @@ async function main() {
 }
 
 /**
- * Puppeteerを使った月次請求書生成のためのデータを準備
- * @returns {Promise<Object>} - 請求書データ
+ * Puppeteerを使った月次請求明細生成のためのデータを準備
+ * @returns {Promise<Object>} - 請求明細データ
  */
 async function generateMonthlyPuppeteerData() {
     try {
@@ -137,27 +137,27 @@ async function generateMonthlyPuppeteerData() {
             targetMonth = String(now.getMonth()).padStart(2, '0');
         }
         
-        console.log(`${targetYear}年${targetMonth}月の請求書データを収集中...`);
+        console.log(`${targetYear}年${targetMonth}月の請求明細データを収集中...`);
         
         // データを収集
         const data = await collectInvoiceData(targetYear, targetMonth);
         
         if (data.totalItems === 0) {
-            console.log(`${targetYear}年${targetMonth}月のデータが見つかりませんでした。請求書は生成されません。`);
+            console.log(`${targetYear}年${targetMonth}月のデータが見つかりませんでした。請求明細は生成されません。`);
             return null;
         }
         
-        // 請求書データの作成
+        // 請求明細データの作成
         return prepareInvoiceData(data, targetYear, targetMonth);
         
     } catch (error) {
-        console.error(`月次請求書データ収集中にエラーが発生しました: ${error.message}`);
+        console.error(`月次請求明細データ収集中にエラーが発生しました: ${error.message}`);
         throw error;
     }
 }
 
 /**
- * 請求書データを準備する
+ * 請求明細データを準備する
  * @param {Object} data - 収集したデータ
  * @param {string} year - 年 (YYYY)
  * @param {string} month - 月 (MM)
@@ -177,7 +177,7 @@ function prepareInvoiceData(data, year, month) {
     const dueDate = new Date(parseInt(year), parseInt(month), invoiceConfig.PAYMENT_TERM_DAYS);
     const dueDateStr = `${dueDate.getFullYear()}年${String(dueDate.getMonth() + 1).padStart(2, '0')}月${String(dueDate.getDate()).padStart(2, '0')}日`;
     
-    // 請求書番号
+    // 請求明細番号
     const invoiceNumber = `INV-${year}${month}-001`;
     
     // テーブル行のHTML生成
@@ -240,7 +240,7 @@ function prepareInvoiceData(data, year, month) {
             <td colspan="6" style="border-top: 2px solid #4a90e2; border-left: none; border-right: none; border-bottom: none; padding: 0;"></td>
         </tr>
         <tr>
-            <td colspan="6" style="text-align: center; font-weight: bold; font-size: 16px; border: none; padding: 15px 0;">【請求書合計】</td>
+            <td colspan="6" style="text-align: center; font-weight: bold; font-size: 16px; border: none; padding: 15px 0;">【請求明細合計】</td>
         </tr>
         <tr class="total-section" style="background-color: #f0f4f8;">
             <td style="text-align: right; font-weight: bold;">小計</td>
@@ -275,15 +275,8 @@ function prepareInvoiceData(data, year, month) {
         periodStart: `${year}年${month}月1日`,
         periodEnd: `${year}年${month}月${lastDay}日`,
         invoiceNumber: invoiceNumber,
-        dueDate: dueDateStr,
-        bankInfo: invoiceConfig.BANK_INFO,
         grandTotal: formatNumberToCurrency(totalWithTax),
         itemsHtml: itemsHtml,
-        // 会社情報
-        companyName: invoiceConfig.COMPANY_NAME,
-        companyAddress: invoiceConfig.COMPANY_ADDRESS,
-        companyTel: invoiceConfig.COMPANY_TEL,
-        companyFax: invoiceConfig.COMPANY_FAX
     };
 }
 
