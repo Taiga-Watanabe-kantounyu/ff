@@ -201,6 +201,23 @@ if (dailyQty < 5) {
     }
 }
 
+async function generateMonthlyInvoice(isCurrentMonth = false) {
+    try {
+        const now = new Date();
+        const year = now.getFullYear().toString();
+        const month = isCurrentMonth ? (now.getMonth() + 1).toString().padStart(2, '0') : (now.getMonth()).toString().padStart(2, '0');
+        console.log(`請求書データを収集中: ${year}-${month}`);
+        const invoiceData = await collectInvoiceData(year, month);
+        console.log(`請求書データ収集完了: ${invoiceData.totalItems}件`);
+        // ここで請求書生成ロジックを追加
+        return `https://example.com/spreadsheet/${year}-${month}`;
+    } catch (error) {
+        console.error(`請求書生成中にエラーが発生しました: ${error.message}`);
+        throw error;
+    }
+}
+
 module.exports = {
-    collectInvoiceData
+    collectInvoiceData,
+    generateMonthlyInvoice
 };

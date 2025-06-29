@@ -272,60 +272,6 @@ async function watchUser(auth) {
             await updateLastCheckTime();
             
             // 請求書生成が有効な場合、設定に応じて請求書を生成
-            if (config.INVOICE_CONFIG.ENABLE_INVOICE_GENERATION) {
-                const now = new Date();
-                const currentDay = now.getDate();
-                const currentMonth = now.getMonth() + 1;
-                const currentYear = now.getFullYear();
-                const lastDayOfMonth = new Date(currentYear, currentMonth, 0).getDate();
-                
-                // 請求書生成タイミングに応じて処理
-                switch(config.INVOICE_CONFIG.INVOICE_TIMING) {
-                    case 'end-of-month':
-                        // 月末の場合
-                        if (currentDay === lastDayOfMonth) {
-                            console.log(`月末（${currentYear}年${currentMonth}月${currentDay}日）のため、請求書を生成します...`);
-                            const spreadsheetUrl = await generateMonthlyInvoice(true); // 現在の月の請求書を生成
-                            if (spreadsheetUrl) {
-                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
-                            } else {
-                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
-                            }
-                        }
-                        break;
-                        
-                    case 'first-of-month':
-                        // 月初の場合
-                        if (currentDay === 1) {
-                            console.log(`月初（${currentYear}年${currentMonth}月${currentDay}日）のため、前月の請求書を生成します...`);
-                            const spreadsheetUrl = await generateMonthlyInvoice(); // 前月の請求書を生成
-                            if (spreadsheetUrl) {
-                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
-                            } else {
-                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
-                            }
-                        }
-                        break;
-                        
-                    case 'specific-day':
-                        // 特定の日の場合
-                        const specificDay = parseInt(config.INVOICE_CONFIG.SPECIFIC_DAY);
-                        if (currentDay === specificDay) {
-                            console.log(`指定日（${currentYear}年${currentMonth}月${currentDay}日）のため、前月の請求書を生成します...`);
-                            const spreadsheetUrl = await generateMonthlyInvoice(); // 前月の請求書を生成
-                            if (spreadsheetUrl) {
-                                console.log(`請求書をスプレッドシートに生成しました: ${spreadsheetUrl}`);
-                            } else {
-                                console.log('請求書生成中にエラーが発生したか、対象データがありませんでした。');
-                            }
-                        }
-                        break;
-                        
-                    default:
-                        console.log(`未対応の請求書生成タイミング: ${config.INVOICE_CONFIG.INVOICE_TIMING}`);
-                        break;
-                }
-            }
         } catch (error) {
             console.error(`メールチェック中にエラーが発生しました: ${error.message}`);
             sendErrorMail('【Gmail監視エラー】メールチェック中にエラー', `${error.stack || error}`, undefined, globalAuth);
