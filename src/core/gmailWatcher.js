@@ -6,7 +6,6 @@ const xlsx = require('xlsx');
 const {authenticate} = require('@google-cloud/local-auth');
 const { processExcelAndUpdateSheet } = require('./excelProcessor');
 const { processOrderFile } = require('./orderFileGenerator');
-const { generateMonthlyInvoice } = require('../utils/invoiceGenerator');
 const {google} = require('googleapis');
 const config = require('../../config/config');
 const { sendErrorMail } = require('../utils/sendErrorMail');
