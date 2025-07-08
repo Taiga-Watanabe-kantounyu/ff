@@ -33,7 +33,8 @@ async function printFile(filePath) {
     // PowerShellスクリプトを生成してExcel印刷を同期的に実行
   // print_excel.ps1 を呼び出し
   const scriptPath = path.resolve(__dirname, '../../print_excel.ps1');
-  const command = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" "${filePath}"`;
+  const printerArg = PRINTER_NAME ? `"${PRINTER_NAME}"` : '""';
+  const command = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" "${filePath}" ${printerArg}`;
 
     console.log(`PowerShellでExcel印刷（完了まで待機し自動で閉じます）`);
     console.log(`実行コマンド: ${command}`);

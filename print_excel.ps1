@@ -1,5 +1,6 @@
 param(
-    [string]$excelFile
+    [string]$excelFile,
+    [string]$printerName
 )
 
 if (-not (Test-Path $excelFile)) {
@@ -12,7 +13,11 @@ $excel.Visible = $false
 
 try {
     $workbook = $excel.Workbooks.Open($excelFile)
-    $workbook.PrintOut()
+    if ($printerName -and $printerName.Trim() -ne "") {
+        $workbook.PrintOut(ActivePrinter=$printerName)
+    } else {
+        $workbook.PrintOut()
+    }
     $workbook.Close($false)
 } catch {
     Write-Error "印刷中にエラーが発生しました: $_"
