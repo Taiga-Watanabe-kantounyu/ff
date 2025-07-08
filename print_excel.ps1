@@ -14,7 +14,7 @@ $excel.Visible = $false
 try {
     $workbook = $excel.Workbooks.Open($excelFile)
     if ($printerName -and $printerName.Trim() -ne "") {
-        $workbook.PrintOut(ActivePrinter=$printerName)
+        $workbook.PrintOut(1, $null, $null, $null, $printerName)
     } else {
         $workbook.PrintOut()
     }
