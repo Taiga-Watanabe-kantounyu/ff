@@ -22,6 +22,7 @@ ffmasta.csv
 # 生成されたファイル
 orders/
 invoices/
+temp/
 
 # テンプレートファイル（機密情報を含む）
 templates/saito_irai.xlsx

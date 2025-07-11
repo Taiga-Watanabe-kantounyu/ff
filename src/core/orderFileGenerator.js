@@ -357,7 +357,7 @@ async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateSt
       const weight = order['重量（kg）'] || '';
       const quantity = order['数量'] || '';
       const deliveryName = order['お届け先名'] || '';
-      const deliveryDate = order.deliveryDate; // グループ化時に追加した配送日
+const deliveryDate = order.deliveryDate || new Date(); // グループ化時に追加した配送日、未定義の場合は現在の日付を使用
       
       // お届け先名からマスタ情報を取得
       const deliveryInfo = getDeliveryInfo(deliveryName);
@@ -406,7 +406,7 @@ async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateSt
       }
       
       // 値だけを設定
-      currentRow.getCell(1).value = formatDateShort(deliveryDate); // A列に配送日をMM/DD形式で設定
+currentRow.getCell(1).value = deliveryDate ? formatDateShort(deliveryDate) : ''; // A列に配送日をMM/DD形式で設定
       currentRow.getCell(2).value = temperatureZone; // B列 温度帯
       currentRow.getCell(3).value = productName; // C列 品名
       currentRow.getCell(4).value = rank; // D列 ランク
@@ -464,7 +464,14 @@ async function generateOrderFile(orderFilePath) {
     console.log('リードタイムマスタを読み込みました。');
     
     // 配送日ごとにデータをグループ化
-    const groupedData = await groupOrdersByDeliveryDate(rawData, pickupDate, leadTimeMaster);
+const groupedData = {};
+rawData.forEach(order => {
+  const deliveryName = order['お届け先名'] || '';
+  if (!groupedData[deliveryName]) {
+    groupedData[deliveryName] = [];
+  }
+  groupedData[deliveryName].push(order);
+});
     const deliveryDates = Object.keys(groupedData);
     console.log(`配送日の種類: ${deliveryDates.length}種類`);
     
