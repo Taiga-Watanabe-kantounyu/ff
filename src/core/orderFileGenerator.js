@@ -109,7 +109,25 @@ async function isHoliday(date) {
 }
 
 /**
- * 日付に日数を加算する（日曜・祝日をスキップ）
+ * data/customHolidays.json を読み込む
+ * @returns {string[]} - YYYY/MM/DD形式の運休日リスト
+ */
+function loadCustomHolidays() {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'customHolidays.json');
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(data);
+    }
+    return [];
+  } catch (error) {
+    console.error(`customHolidaysの読み込みエラー: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * 日付に日数を加算する（日曜・祝日・個別運休日をスキップ）
  * @param {Date} date - 元の日付
  * @param {number} days - 加算する日数
  * @returns {Promise<Date>} - 加算後の日付
@@ -117,17 +135,19 @@ async function isHoliday(date) {
 async function addDays(date, days) {
   const result = new Date(date);
   let remainingDays = days;
-  
+  const customHolidays = loadCustomHolidays();
+
   while (remainingDays > 0) {
     // 1日進める
     result.setDate(result.getDate() + 1);
-    
-    // 日曜日または祝日でない場合のみカウント
-    if (!isSunday(result) && !(await isHoliday(result))) {
+
+    const dateStr = formatDate(result);
+    // 日曜日・祝日・個別運休日でない場合のみカウント
+    if (!isSunday(result) && !(await isHoliday(result)) && !customHolidays.includes(dateStr)) {
       remainingDays--;
     }
   }
-  
+
   return result;
 }
 
