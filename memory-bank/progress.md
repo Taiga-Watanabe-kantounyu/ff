@@ -5,6 +5,7 @@
 - `gmailWatcher.js`で受信メールの添付Excelファイルをダウンロードし、`excelProcessor.js`でGoogleスプレッドシートに自動転記。
 - `processed_sheets.json`への処理済みファイル記録機能を実装し、冪等性を確保。
 - `orderFileGenerator.js`で受注データから発注用Excel（saito_irai.xlsx）をテンプレート保持しつつ生成。
+- 受注エクセルの全シートを走査し、条件を満たすシートごとにorderFileGeneratorで発注ファイルを生成できるよう拡張。
 - `deliveryMasterManager.js`と`deliveryMaster.json`による配送先マスタ管理機能を実装。
 - `src/utils/addLeadTime.js`と`orderFileGenerator.js`で祝日API（holidays-jp）をキャッシュ利用し、日曜祝日をスキップする配送日計算を実装。
 - `config.js`にMAIL_SEARCH_CONFIG、sheetName、プリンタ設定を追加し、動的に読み込む仕組みを実装。

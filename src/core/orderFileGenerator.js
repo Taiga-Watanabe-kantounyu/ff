@@ -4,8 +4,15 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx'); // xlsxライブラリも使用（データ構造の解析用）
 const { printFile } = require('../utils/printFile'); // 印刷機能を追加
 
-// 発注用テンプレートファイルのパス
-const TEMPLATE_FILE_PATH = path.join(process.cwd(), 'templates', 'saito_irai.xlsx');
+/**
+ * 荷主ごとにテンプレートファイルを切り替える
+ * @param {Object} shipperConfig - 荷主設定（formatTemplateキー必須）
+ * @returns {string} - テンプレートファイルの絶対パス
+ */
+function getTemplateFilePath(shipperConfig) {
+  const fileName = shipperConfig && shipperConfig.formatTemplate ? shipperConfig.formatTemplate : 'saito_irai.xlsx';
+  return path.join(process.cwd(), 'templates', fileName);
+}
 // お届け先マスタファイルのパス
 const FREIGHT_MASTER_PATH = path.join(process.cwd(), 'data', 'freightMaster.json');
 
@@ -334,14 +341,15 @@ async function groupOrdersByDeliveryDate(rawData, pickupDate, leadTimeMaster) {
  * @param {string} deliveryDateStr - 配送日（YYYY/MM/DD形式）
  * @returns {Promise<string>} - 生成された発注ファイルのパス
  */
-async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateStr) {
+async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateStr, shipperConfig) {
   try {
     // テンプレートファイルを新しいワークブックとしてコピー
     const fs = require('fs');
     const tempFilePath = path.join(process.cwd(), 'templates', 'temp_template.xlsx');
+    const templateFilePath = getTemplateFilePath(shipperConfig);
     
     // テンプレートファイルをコピー
-    fs.copyFileSync(TEMPLATE_FILE_PATH, tempFilePath);
+    fs.copyFileSync(templateFilePath, tempFilePath);
     
     // コピーしたテンプレートファイルを開く
     const workbook = new ExcelJS.Workbook();
@@ -472,7 +480,7 @@ async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateSt
  * @param {string} orderFilePath - 受注ファイルのパス
  * @returns {Promise<string[]>} - 生成された発注ファイルのパスの配列
  */
-async function generateOrderFile(orderFilePath) {
+async function generateOrderFile(orderFilePath, shipperConfig) {
   try {
     // 受注データから値だけを抽出
     const { pickupDate, rawData } = extractOrderData(orderFilePath);
@@ -494,7 +502,7 @@ async function generateOrderFile(orderFilePath) {
       const orders = groupedData[deliveryDateStr];
       console.log(`配送日 ${deliveryDateStr} の注文数: ${orders.length}`);
       
-      const outputFilePath = await createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateStr);
+      const outputFilePath = await createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateStr, shipperConfig);
       outputFilePaths.push(outputFilePath);
     }
     
@@ -507,16 +515,60 @@ async function generateOrderFile(orderFilePath) {
 }
 
 /**
- * 発注ファイル生成処理のメイン関数
+ * 受注エクセルの全シートを走査し、条件を満たすシートごとに発注ファイルを生成
  * @param {string} orderFilePath - 受注ファイルのパス
  * @param {boolean} printAfterGeneration - 生成後に印刷するかどうか（デフォルトはtrue）
+ * @param {object|null} shipperConfig - 荷主設定
  * @returns {Promise<string[]>} - 生成された発注ファイルのパスの配列
  */
-async function processOrderFile(orderFilePath, printAfterGeneration = true) {
+async function processOrderFile(orderFilePath, printAfterGeneration = true, shipperConfig = null) {
   try {
-    console.log(`受注ファイルの処理を開始します: ${orderFilePath}`);
-    const outputFilePaths = await generateOrderFile(orderFilePath);
-    
+    console.log(`受注ファイルの全シート処理を開始します: ${orderFilePath}`);
+    const xlsx = require('xlsx');
+    const workbook = xlsx.readFile(orderFilePath, { cellStyles: false, cellFormula: false });
+    const outputFilePaths = [];
+
+    for (const sheetName of workbook.SheetNames) {
+      const ws = workbook.Sheets[sheetName];
+      // C1セルが存在
+      if (!ws['C1']) continue;
+      // B2～H2ヘッダー判定
+      const headers = ['B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      const expected = ['温度帯', '品番', '品名', 'ランク', '重量（kg）', '数量', 'お届け先名'];
+      let valid = true;
+      for (let i = 0; i < headers.length; i++) {
+        const cell = ws[headers[i] + '2'];
+        if (!cell || (cell.v !== expected[i] && cell.w !== expected[i])) {
+          valid = false;
+          break;
+        }
+      }
+      if (!valid) continue;
+      // 注文内容1行目（3行目）が空欄か判定（B3～H3のいずれも値がない場合は除外）
+      let hasOrder = false;
+      for (let i = 0; i < headers.length; i++) {
+        const cell = ws[headers[i] + '3'];
+        if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
+          hasOrder = true;
+          break;
+        }
+      }
+      if (!hasOrder) continue;
+
+      // シートごとに一時ファイルとして保存して既存ロジックを流用
+      const tempWb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(tempWb, ws, sheetName);
+      const tempPath = path.join(process.cwd(), 'orders', `__temp_${sheetName}.xlsx`);
+      xlsx.writeFile(tempWb, tempPath);
+
+      // 既存のgenerateOrderFileで処理
+      const files = await generateOrderFile(tempPath, shipperConfig);
+      outputFilePaths.push(...files);
+
+      // 一時ファイル削除
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
+
     // 発注ファイル生成後に印刷処理を実行
     if (printAfterGeneration) {
       for (const filePath of outputFilePaths) {
@@ -526,11 +578,10 @@ async function processOrderFile(orderFilePath, printAfterGeneration = true) {
           console.log(`${filePath} の印刷処理が完了しました`);
         } catch (printError) {
           console.error(`印刷処理中にエラーが発生しました: ${printError.message}`);
-          // 印刷エラーがあっても処理は続行し、次のファイルの印刷に進む
         }
       }
     }
-    
+
     return outputFilePaths;
   } catch (error) {
     console.error(`処理中にエラーが発生しました: ${error.message}`);

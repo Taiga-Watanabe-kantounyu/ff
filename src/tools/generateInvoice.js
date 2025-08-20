@@ -48,8 +48,9 @@ function openPdfFile(filePath) {
 async function main() {
     try {
         const args = process.argv.slice(2);
-        
-        // 引数に基づいて処理を分岐
+        const shipperMaster = require('../../data/shipperMaster.json');
+
+        // 引数: [年] [月] [荷主名]
         if (args.length === 0) {
             // 引数なしの場合は前月の請求明細を生成
             console.log('前月の請求明細をPDFで生成します...');
@@ -77,13 +78,23 @@ async function main() {
             } else {
                 console.log('請求明細生成中にエラーが発生したか、対象データがありませんでした。');
             }
-        } else if (args.length === 2) {
-            // 年と月が指定された場合
+        } else if (args.length === 2 || args.length === 3) {
+            // 年と月が指定された場合、さらに荷主名があれば取得
             const year = args[0];
             const month = args[1].padStart(2, '0');
-            
+            let shipper = null;
+            if (args.length === 3) {
+                const shipperName = args[2];
+                shipper = shipperMaster.find(s => s.shipperName === shipperName);
+                if (!shipper) {
+                    console.error(`荷主名「${shipperName}」が見つかりません。`);
+                    return;
+                }
+            }
+
+            // shipperが指定されていればspreadsheetIdを渡す
             console.log(`${year}年${month}月の請求明細をPDF生成します...`);
-            const data = await collectInvoiceData(year, month);
+            const data = await collectInvoiceData(year, month, shipper ? shipper.spreadsheetId : undefined);
             
             if (data.totalItems === 0) {
                 console.log(`${year}年${month}月のデータが見つかりませんでした。請求明細は生成されません。`);
@@ -91,7 +102,7 @@ async function main() {
             }
             
             // 請求明細データの作成
-            const invoiceData = prepareInvoiceData(data, year, month);
+            const invoiceData = prepareInvoiceData(data, year, month, shipper);
             
             // Puppeteerを使用してPDF生成
             const pdfPath = await generateInvoicePdf(invoiceData, year, month);
@@ -105,10 +116,11 @@ async function main() {
             }
         } else {
             console.log('使用方法:');
-            console.log('  node src/tools/generateInvoice.js [年] [月]');
+            console.log('  node src/tools/generateInvoice.js [年] [月] [荷主名]');
             console.log('例:');
-            console.log('  node src/tools/generateInvoice.js 2025 04             # 2025年4月の請求明細を生成');
-            console.log('  node src/tools/generateInvoice.js                     # 前月の請求明細を生成');
+            console.log('  node src/tools/generateInvoice.js 2025 04 東新畜産株式会社   # 2025年4月の請求明細を生成（荷主指定）');
+            console.log('  node src/tools/generateInvoice.js 2025 04                 # 2025年4月の請求明細を生成（デフォルト）');
+            console.log('  node src/tools/generateInvoice.js                          # 前月の請求明細を生成');
         }
     } catch (error) {
         console.error('エラーが発生しました:', error.message);
@@ -163,7 +175,24 @@ async function generateMonthlyPuppeteerData() {
  * @param {string} month - 月 (MM)
  * @returns {Object} - テンプレートに適用するデータ
  */
-function prepareInvoiceData(data, year, month) {
+function prepareInvoiceData(data, year, month, shipper) {
+    let billTo = null;
+    if (shipper) {
+        billTo = shipper;
+    } else {
+        const shipperMaster = require('../../data/shipperMaster.json');
+        let fromEmail = (config.MAIL_SEARCH_CONFIG && config.MAIL_SEARCH_CONFIG.FROM_EMAIL) ? config.MAIL_SEARCH_CONFIG.FROM_EMAIL : null;
+        if (fromEmail) {
+            billTo = shipperMaster.find(s => (s.emails || []).includes(fromEmail));
+        }
+        if (!billTo && invoiceConfig.COMPANY_NAME) {
+            billTo = shipperMaster.find(s => s.shipperName === invoiceConfig.COMPANY_NAME);
+        }
+        if (!billTo) {
+            billTo = shipperMaster[0];
+        }
+    }
+
     // 請求期間の設定
     const periodStart = `${year}/${month}/01`;
     const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -270,7 +299,8 @@ function prepareInvoiceData(data, year, month) {
     
     // テンプレートに適用するデータを準備
     return {
-        customerName: config.MAIL_SEARCH_CONFIG && config.MAIL_SEARCH_CONFIG.FROM_EMAIL ? config.MAIL_SEARCH_CONFIG.FROM_EMAIL.split('@')[0] : invoiceConfig.COMPANY_NAME,
+        customerName: billTo && billTo.shipperName ? billTo.shipperName : (invoiceConfig.COMPANY_NAME || '請求先不明'),
+        billTo: billTo,
         invoiceDate: todayStr,
         periodStart: `${year}年${month}月1日`,
         periodEnd: `${year}年${month}月${lastDay}日`,

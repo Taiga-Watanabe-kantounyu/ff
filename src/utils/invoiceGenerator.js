@@ -15,7 +15,7 @@ const { SPREADSHEET_ID } = require('../../config/config');
  */
 const { loadDeliveryMaster } = require('../models/deliveryMasterManager');
 
-async function collectInvoiceData(year, month) {
+async function collectInvoiceData(year, month, spreadsheetId) {
     try {
         // Google Sheets APIの認証
         const auth = new google.auth.GoogleAuth({
@@ -32,7 +32,7 @@ async function collectInvoiceData(year, month) {
         
         // スプレッドシートのデータを全て取得
         const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
+            spreadsheetId: spreadsheetId || SPREADSHEET_ID,
             range: `${TARGET_SHEET_NAME}!A:I`, // A列からI列まで全て取得
         });
         

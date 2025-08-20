@@ -18,6 +18,7 @@ data/last_mail_check.json
 data/freightMaster.json
 data/ffmasta.csv
 ffmasta.csv
+data/shipperMaster.json
 
 # 生成されたファイル
 orders/
@@ -26,6 +27,6 @@ temp/
 
 # テンプレートファイル（機密情報を含む）
 templates/saito_irai.xlsx
-
+templates/toshin_irai.xlsx
 # Node.js
 node_modules/

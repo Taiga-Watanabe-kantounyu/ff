@@ -1,61 +1,34 @@
-// スプレッドシートのID
-// Google Sheetsの共有URLから取得できます
-// 例: https://docs.google.com/spreadsheets/d/1bAMaFbZvfO3LDQ_fIbUE4J6UcZvKpWXtHdwvurylYo/edit
+/**
+ * 設定サンプルファイル
+ * 荷主情報は data/shipperMaster.json で管理してください。
+ */
+
 const SPREADSHEET_ID = 'あなたのスプレッドシートIDを入力してください';
 
 // 認証情報ファイルのパス
-// Google Cloud Platformで作成したサービスアカウントキーのパス
 const CREDENTIALS_PATH = './config/service-account-key.json';
-
-// メール検索設定
-const MAIL_SEARCH_CONFIG = {
-  // 検索対象となる差出人のメールアドレス
-  FROM_EMAIL: 'example@example.com'
-};
 
 // プリンタ設定
 const PRINTER_CONFIG = {
-  // 発注書の印刷に使用するプリンタ名
-  // システムにインストールされているプリンタ名を指定
-  // 例: 'Microsoft Print to PDF', 'HP LaserJet Pro'
   PRINTER_NAME: 'あなたのプリンタ名を入力してください',
-  
-  // 印刷を有効にするかどうか
   ENABLE_PRINTING: false,
-  
-  // 印刷部数
   COPIES: 1
 };
 
 // 請求書生成設定
 const INVOICE_CONFIG = {
-  // 請求書生成を有効にするかどうか
   ENABLE_INVOICE_GENERATION: true,
-  
-  // 請求書生成タイミング
-  // 'end-of-month': 月末の最終チェック時に生成（当月分）
-  // 'first-of-month': 月初の最初のチェック時に生成（前月分）
-  // 'specific-day': 特定の日に生成（前月分）
   INVOICE_TIMING: 'end-of-month',
-  
-  // 特定の日を指定する場合の日付（1-31）
   SPECIFIC_DAY: 1,
-  
-  // 請求書の出力ディレクトリ
   OUTPUT_DIRECTORY: './billing/invoices'
 };
 
 // 通知メール設定
 const NOTIFY_MAIL_CONFIG = {
-  // 通知メール送信を有効にするかどうか
   ENABLE_NOTIFICATION: true,
-  // 送信元Gmailアドレス
   USER: 'あなたのGmailアドレスを入力してください',
-  // SMTPパスワードまたはアプリパスワード
   PASS: 'あなたのSMTPパスワードを入力してください',
-  // 通知先メールアドレス（カンマ区切りで複数可）
   TO: '通知先メールアドレスを入力してください',
-  // デフォルト件名
   SUBJECT: '【通知】システムイベント'
 };
 
@@ -63,7 +36,6 @@ module.exports = {
   SPREADSHEET_ID,
   CREDENTIALS_PATH,
   PRINTER_CONFIG,
-  MAIL_SEARCH_CONFIG,
   INVOICE_CONFIG,
   NOTIFY_MAIL_CONFIG
 };

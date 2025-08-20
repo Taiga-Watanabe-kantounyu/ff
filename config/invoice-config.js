@@ -12,7 +12,7 @@ module.exports = {
   INVOICE_TEMPLATE_PATH: 'templates/inv_temp.html',
 
   // PDFファイル名のフォーマット
-  PDF_FILENAME_FORMAT: '請求書_{{year}}年{{month}}月_{{date}}.pdf',
+  PDF_FILENAME_FORMAT: '請求書_{{shipper}}_{{year}}年{{month}}月_{{date}}.pdf',
 
   // HTMLファイル名のフォーマット
   HTML_FILENAME_FORMAT: '請求書_{{year}}年{{month}}月_{{date}}.html'

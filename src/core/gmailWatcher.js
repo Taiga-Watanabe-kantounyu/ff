@@ -8,6 +8,17 @@ const { processExcelAndUpdateSheet } = require('./excelProcessor');
 const { processOrderFile } = require('./orderFileGenerator');
 const {google} = require('googleapis');
 const config = require('../../config/config');
+const shipperMaster = require('../../data/shipperMaster.json');
+
+/**
+ * メールアドレスから荷主情報を取得
+ * @param {string} email
+ * @returns {object|null}
+ */
+function findShipperByEmail(email) {
+  email = email.trim().toLowerCase();
+  return shipperMaster.find(s => Array.isArray(s.emails) && s.emails.map(e => e.toLowerCase()).includes(email)) || null;
+}
 const { sendErrorMail } = require('../utils/sendErrorMail');
 
 // If modifying these scopes, delete token.json.
@@ -128,6 +139,26 @@ async function generateUniqueFilePath(originalPath, messageId, internalDate) {
 async function processAttachments(auth, message) {
     const gmail = google.gmail({version: 'v1', auth});
     const parts = message.payload.parts;
+
+    // 差出人アドレス取得
+    let fromAddress = null;
+    if (message.payload.headers) {
+        const fromHeader = message.payload.headers.find(h => h.name.toLowerCase() === 'from');
+        if (fromHeader) {
+            // 例: "山田太郎 <aaa@example.com>" からメールアドレス部分のみ抽出
+            const match = fromHeader.value.match(/<(.+?)>/);
+            fromAddress = match ? match[1] : fromHeader.value;
+            fromAddress = fromAddress.trim().toLowerCase();
+        }
+    }
+    // 荷主マスタから設定取得
+    const shipperConfig = findShipperByEmail(fromAddress);
+    if (!shipperConfig) {
+        // 未登録アドレスはスルー（何も処理しない）
+        return;
+    }
+    const spreadsheetId = shipperConfig.spreadsheetId;
+
     for (const part of parts) {
         if (part.filename && part.body && part.body.attachmentId) {
             const attachment = await gmail.users.messages.attachments.get({
@@ -148,13 +179,13 @@ async function processAttachments(auth, message) {
             await fs.writeFile(uniqueFilePath, buffer);
             console.log(`Attachment saved as: ${uniqueFilePath}`);
             
-            // Excelファイルを処理し、処理結果を取得
-            const processed = await processExcelAndUpdateSheet(uniqueFilePath, message.id, message.internalDate);
+            // Excelファイルを処理し、処理結果を取得（spreadsheetIdを渡す）
+            const processed = await processExcelAndUpdateSheet(uniqueFilePath, message.id, message.internalDate, spreadsheetId);
             
             // 処理が実行された場合のみ、発注用ファイルを生成し、印刷する
             if (processed) {
                 try {
-                    const orderFilePaths = await processOrderFile(uniqueFilePath, true); // 第2引数のtrueは印刷を有効にする
+                    const orderFilePaths = await processOrderFile(uniqueFilePath, true, shipperConfig); // 第3引数にshipperConfigを渡す
                     console.log(`発注用ファイルを生成し、印刷しました: ${orderFilePaths.length}件`);
                     orderFilePaths.forEach((filePath, index) => {
                         console.log(`発注ファイル ${index + 1}: ${filePath}`);
@@ -255,13 +286,14 @@ async function watchUser(auth) {
             // 前回のチェック時間を取得
             const lastCheckTime = await getLastCheckTime();
             
-            // 前回のチェック時間以降のメールを検索するクエリを作成
-            const query = `from:${config.MAIL_SEARCH_CONFIG.FROM_EMAIL} after:${lastCheckTime}`;
+            // 荷主マスタの全メールアドレスを対象に検索
+            const fromEmails = shipperMaster.flatMap(s => s.emails || []);
+            const query = `(${fromEmails.map(addr => `from:${addr}`).join(' OR ')}) after:${lastCheckTime}`;
             console.log(`メール検索クエリ: ${query}`);
-            
+
             const messages = await listMessages(auth, query);
             console.log(`${messages.length}件の新しいメールを検出しました`);
-            
+
             for (const message of messages) {
                 const fullMessage = await getMessage(auth, message.id);
                 await processAttachments(auth, fullMessage);

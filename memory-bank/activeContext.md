@@ -6,10 +6,12 @@
 - Google Cloud Pub/Subを使用して、特定のトピックに対する変更を監視。
 - `gmailWatcher.js`と`excelProcessor.js`を連携させ、Gmailの添付ファイルを自動的にGoogleスプレッドシートに転記するフローを実装。
 - 受注フォーマットのデータを発注用フォーマットに転記する機能を実装。
+- 受注エクセルの全シートを走査し、条件を満たすシートごとにorderFileGeneratorで発注ファイルを生成する機能を実装。
 
 ## 最近の変更
 - 配送データの管理を`deliveryMaster`から`freightMaster`に移行しました。
 - `orderFileGenerator.js`を修正し、配送日計算ロジックを正しく適用するように改善しました。
+- `orderFileGenerator.js`を拡張し、受注エクセルの全シートを走査し、対象シートごとに発注ファイルを生成できるようにした。
 
 ## 次のステップ
 - メールボックスの変更通知のさらなるテストと検証。

@@ -135,8 +135,17 @@ async function generateInvoicePdf(invoiceData, year, month, options = {}) {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0].replace(/-/g, '');
     
+    // ファイル名用に荷主名をサニタイズ
+    let shipperName = '';
+    if (invoiceData && invoiceData.billTo && invoiceData.billTo.shipperName) {
+      shipperName = invoiceData.billTo.shipperName.replace(/[\\\/:*?"<>| \u3000]/g, '_');
+    } else {
+      shipperName = 'unknown';
+    }
+
     // PDFファイル名の生成
     const pdfFileName = invoiceConfig.PDF_FILENAME_FORMAT
+      .replace('{{shipper}}', shipperName)
       .replace('{{year}}', year)
       .replace('{{month}}', month)
       .replace('{{date}}', todayStr);
