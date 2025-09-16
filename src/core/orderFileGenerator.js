@@ -458,15 +458,16 @@ async function createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateSt
     }
     
     // 発注ファイル名を生成
-    // 配送日ごとに発注ファイルを作成するため、配送日を使用してファイル名を生成
-    const deliveryDateForFileName = deliveryDateStr.replace(/\//g, '');
-    const outputFileName = `発注_${deliveryDateForFileName}.xlsx`;
+    // 配送日とお届け先名ごとに発注ファイルを作成するため、両方をファイル名に含める
+    // ファイル名に使えない記号のみアンダーバーに置換し、日本語や全角文字はそのまま残す
+    const safeFileName = deliveryDateStr.replace(/[\/\\:\*\?"<>\|]/g, '_');
+    const outputFileName = `発注_${safeFileName}.xlsx`;
     const outputFilePath = path.join(process.cwd(), 'invoices', outputFileName);
-    
+
     // 発注ファイルを保存
     await workbook.xlsx.writeFile(outputFilePath);
     console.log(`発注ファイルを生成しました: ${outputFilePath}`);
-    
+
     return outputFilePath;
   } catch (error) {
     console.error(`発注ファイルの生成中にエラーが発生しました: ${error.message}`);
@@ -496,16 +497,29 @@ async function generateOrderFile(orderFilePath, shipperConfig) {
     const deliveryDates = Object.keys(groupedData);
     console.log(`配送日の種類: ${deliveryDates.length}種類`);
     
-    // 各配送日ごとに発注ファイルを生成
+    // 各配送日ごとに発注ファイルを生成（お届け先ごとに分割）
     const outputFilePaths = [];
     for (const deliveryDateStr of deliveryDates) {
       const orders = groupedData[deliveryDateStr];
-      console.log(`配送日 ${deliveryDateStr} の注文数: ${orders.length}`);
-      
-      const outputFilePath = await createOrderFileForDeliveryDate(orders, pickupDate, deliveryDateStr, shipperConfig);
-      outputFilePaths.push(outputFilePath);
+      // お届け先名ごとにグループ化
+      const deliveryGroups = {};
+      for (const order of orders) {
+        const deliveryName = order['お届け先名'] || '';
+        if (!deliveryGroups[deliveryName]) deliveryGroups[deliveryName] = [];
+        deliveryGroups[deliveryName].push(order);
+      }
+      for (const deliveryName of Object.keys(deliveryGroups)) {
+        const ordersForDelivery = deliveryGroups[deliveryName];
+        console.log('ファイル名生成用 deliveryName:', deliveryName);
+        const outputFilePath = await createOrderFileForDeliveryDate(
+          ordersForDelivery,
+          pickupDate,
+          deliveryDateStr + '_' + deliveryName,
+          shipperConfig
+        );
+        outputFilePaths.push(outputFilePath);
+      }
     }
-    
     return outputFilePaths;
   } catch (error) {
     console.error(`発注ファイルの生成中にエラーが発生しました: ${error.message}`);
